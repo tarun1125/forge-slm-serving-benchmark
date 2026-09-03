@@ -1,0 +1,1 @@
+FROM ../models/fused-gguf/model-Q8_0.gguf

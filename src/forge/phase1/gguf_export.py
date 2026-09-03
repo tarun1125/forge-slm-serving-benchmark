@@ -17,9 +17,38 @@ checkpoint the MLX variants are derived from, just via a different converter.
 One-time setup (not automated here deliberately — it's a build step with its
 own toolchain requirements, not something to run unattended):
     git clone https://github.com/ggerganov/llama.cpp ~/llama.cpp
-    cd ~/llama.cpp && pip install -r requirements.txt
-    cmake -B build && cmake --build build --config Release -j
+    python3 -m venv ~/llama.cpp/.venv          # DEDICATED venv — see note below
+    ~/llama.cpp/.venv/bin/pip install -r ~/llama.cpp/requirements.txt
+    cmake -B ~/llama.cpp/build -DCMAKE_BUILD_TYPE=Release
+    cmake --build ~/llama.cpp/build --config Release -j
     # llama-quantize will be at ~/llama.cpp/build/bin/llama-quantize
+
+Why a DEDICATED venv rather than just `pip install -r requirements.txt` into
+whatever's active: convert_hf_to_gguf.py needs torch (~2GB, CPU wheel) plus
+sentencepiece/gguf — none of which FORGE itself needs, so they don't belong
+in this project's own pyproject.toml. It also has to be a real venv, not a
+plain `pip install --user`: running `python -m forge.phase1.gguf_export`
+from FORGE's own activated .venv shadows the `python3` on PATH with FORGE's
+venv interpreter, which never sees `--user` site-packages installed against
+a different (e.g. pyenv global) interpreter — that mismatch is exactly what
+produced a `ModuleNotFoundError: No module named 'torch'` the first time
+this was set up, despite torch being verifiably installed elsewhere. This
+script resolves llama.cpp's own venv explicitly (see
+find_conversion_python()) rather than trusting ambient PATH state, so it
+works correctly regardless of which venv FORGE itself is running under.
+
+A second, unrelated upstream gap this hits: the mlx-community checkpoint's
+tokenizer_config.json carries "extra_special_tokens" as a JSON *list*, but
+transformers>=4.5x's tokenizer loader (used internally by
+convert_hf_to_gguf.py's AutoTokenizer.from_pretrained(), not by mlx_lm's own
+tokenizer loading) requires it to be a dict and crashes with
+`AttributeError: 'list' object has no attribute 'keys'` otherwise. Every
+token that field would have named is already present in tokenizer.json's own
+added_tokens (verified: 22 entries, including all the ones listed) — the
+field is a redundant, misformatted duplicate, not load-bearing. sanitize_
+tokenizer_config() corrects it to {} in place before conversion. This DOES
+change models/fused-bf16's content hash — re-run forge.phase1.manifest after
+a GGUF export to keep MANIFEST.json accurate.
 
 Usage:
     python -m forge.phase1.gguf_export --fused-path models/fused-bf16
@@ -29,6 +58,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import time
@@ -46,8 +76,10 @@ Qwen2.5-Coder weights (mlx_lm's own GGUF exporter doesn't support Qwen2 — see
 this module's docstring). One-time setup:
 
     git clone https://github.com/ggerganov/llama.cpp {path}
-    cd {path} && pip install -r requirements.txt
-    cmake -B build && cmake --build build --config Release -j
+    python3 -m venv {path}/.venv
+    {path}/.venv/bin/pip install -r {path}/requirements.txt
+    cmake -B {path}/build -DCMAKE_BUILD_TYPE=Release
+    cmake --build {path}/build --config Release -j
 
 Then re-run this script, or pass --llama-cpp-path if you cloned it elsewhere.
 """
@@ -61,15 +93,56 @@ def find_llama_cpp(explicit_path: Path | None) -> Path:
     return candidate
 
 
+def find_conversion_python(llama_cpp_path: Path) -> str:
+    """Resolve the interpreter that has llama.cpp's own requirements
+    installed (torch, sentencepiece, gguf), rather than trusting whatever
+    `python3` PATH resolution happens to pick — which, run from inside
+    FORGE's own activated .venv, resolves to FORGE's interpreter and never
+    sees these packages. See this module's docstring for the concrete
+    failure this caused. Falls back to plain "python3" with a warning if
+    the dedicated venv wasn't set up (e.g. an older manual install)."""
+    dedicated = llama_cpp_path / ".venv" / "bin" / "python3"
+    if dedicated.exists():
+        return str(dedicated)
+    log.warning(
+        "gguf_export.no_dedicated_venv",
+        expected_path=str(dedicated),
+        hint=f"python3 -m venv {llama_cpp_path}/.venv && "
+        f"{llama_cpp_path}/.venv/bin/pip install -r {llama_cpp_path}/requirements.txt",
+    )
+    return "python3"
+
+
+def sanitize_tokenizer_config(fused_path: Path) -> None:
+    """Fix the extra_special_tokens list-vs-dict mismatch described in this
+    module's docstring, in place. No-op if already a dict (e.g. a
+    differently-sourced checkpoint that never had the bug)."""
+    config_path = fused_path / "tokenizer_config.json"
+    if not config_path.exists():
+        return
+
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    if isinstance(config.get("extra_special_tokens"), list):
+        log.info(
+            "gguf_export.sanitize_tokenizer_config",
+            fused_path=str(fused_path),
+            note="extra_special_tokens list -> {} (already present in tokenizer.json added_tokens)",
+        )
+        config["extra_special_tokens"] = {}
+        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+
 def export_f16_gguf(llama_cpp_path: Path, fused_path: Path, out_file: Path) -> Path:
     out_file.parent.mkdir(parents=True, exist_ok=True)
     convert_script = llama_cpp_path / "convert_hf_to_gguf.py"
+    python = find_conversion_python(llama_cpp_path)
+    sanitize_tokenizer_config(fused_path)
 
     log.info("gguf_export.start", fused_path=str(fused_path), out_file=str(out_file))
     start = time.monotonic()
     subprocess.run(
         [
-            "python3",
+            python,
             str(convert_script),
             str(fused_path),
             "--outfile",
