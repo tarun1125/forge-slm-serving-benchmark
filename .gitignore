@@ -10,8 +10,13 @@ mlflow.db-*
 models/*/
 !models/MANIFEST.json
 
-# Benchmark outputs regenerate from the harness; keep the repo light
+# Benchmark outputs regenerate from the harness; keep the repo light.
+# ** (not *) so this actually reaches nested dirs like results/sweep/ —
+# a bare `results/*.jsonl` only matches the top level and silently let 135
+# real sweep result files into a commit before this was caught.
+results/**/*.jsonl
 results/*.jsonl
+results/**/*.csv
 results/*.csv
 results/figures/
 

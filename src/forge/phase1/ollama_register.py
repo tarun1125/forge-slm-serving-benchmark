@@ -39,6 +39,17 @@ TAG_BY_FRAGMENT = {
     "Q4_K_M": "q4",
 }
 
+# Ollama defaults to a 4096-token context window regardless of what the
+# model itself supports (Qwen2.5-Coder's own max_position_embeddings is
+# 32768) — found live, not assumed: the Phase 2 sweep's "long" prompt bucket
+# (measured 4063-6158 tokens) hit a hard `exceed_context_size_error` 400 on
+# every Ollama cell whose sampled case landed above 4096, mlx_lm and
+# vllm_metal unaffected since their context is set explicitly. 8192 gives
+# headroom above the largest observed long-bucket prompt plus completion
+# tokens (6158 + up to 300 <= 8192) without ballooning KV-cache memory the
+# way jumping straight to 32768 would.
+DEFAULT_NUM_CTX = 8192
+
 
 def tag_for(gguf_file: Path) -> str | None:
     for fragment, tag in TAG_BY_FRAGMENT.items():
@@ -47,16 +58,18 @@ def tag_for(gguf_file: Path) -> str | None:
     return None
 
 
-def write_modelfile(gguf_file: Path, tag: str) -> Path:
+def write_modelfile(gguf_file: Path, tag: str, num_ctx: int = DEFAULT_NUM_CTX) -> Path:
     OLLAMA_DIR.mkdir(parents=True, exist_ok=True)
     modelfile_path = OLLAMA_DIR / f"Modelfile.{tag}"
     relative_from = Path("..") / gguf_file.relative_to(REPO_ROOT)
-    modelfile_path.write_text(f"FROM {relative_from}\n", encoding="utf-8")
+    modelfile_path.write_text(
+        f"FROM {relative_from}\nPARAMETER num_ctx {num_ctx}\n", encoding="utf-8"
+    )
     return modelfile_path
 
 
-def register(gguf_file: Path, tag: str, model_prefix: str) -> str:
-    modelfile_path = write_modelfile(gguf_file, tag)
+def register(gguf_file: Path, tag: str, model_prefix: str, num_ctx: int = DEFAULT_NUM_CTX) -> str:
+    modelfile_path = write_modelfile(gguf_file, tag, num_ctx)
     model_name = f"{model_prefix}:{tag}"
 
     log.info("ollama_register.start", model_name=model_name, gguf_file=str(gguf_file))
@@ -75,6 +88,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gguf-dir", type=Path, default=Path("models/fused-gguf"))
     parser.add_argument("--model-prefix", default="forge-qwen-coder-ft")
+    parser.add_argument("--num-ctx", type=int, default=DEFAULT_NUM_CTX)
     args = parser.parse_args()
 
     gguf_dir = (REPO_ROOT / args.gguf_dir) if not args.gguf_dir.is_absolute() else args.gguf_dir
@@ -92,7 +106,7 @@ def main() -> None:
         if tag is None:
             log.warning("ollama_register.unrecognized_variant", gguf_file=str(gguf_file))
             continue
-        registered.append(register(gguf_file, tag, args.model_prefix))
+        registered.append(register(gguf_file, tag, args.model_prefix, args.num_ctx))
 
     log.info("run.finish", run_id=run_id, phase="phase1.ollama_register", registered=registered)
     print(f"Registered: {', '.join(registered)}")

@@ -1,1 +1,2 @@
 FROM ../models/fused-gguf/model-Q4_K_M.gguf
+PARAMETER num_ctx 8192
