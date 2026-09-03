@@ -40,10 +40,16 @@ class RequestResult(BaseModel):
     error: str | None = None  # None means success
 
     # Thermal (Mac arms) — logged per-request so drift correlates with time,
-    # not with arm (see docs/thermal-protocol.md for the randomization
-    # rationale this feeds into).
-    cpu_temp_c: float | None = None
-    gpu_temp_c: float | None = None
+    # not with arm (see thermal.py's module docstring for the randomization
+    # rationale this feeds into). No raw Celsius here deliberately: this
+    # macOS version's powermetrics has no sampler that reports one (the
+    # historical "smc" sampler is gone) — confirmed against real captured
+    # output, not assumed. thermal_pressure_level is macOS's own
+    # Nominal/Fair/Serious/Critical throttling judgment, arguably a more
+    # authoritative signal than a raw temperature would have been anyway.
+    thermal_pressure_level: str | None = None
+    cpu_power_mw: float | None = None
+    gpu_power_mw: float | None = None
     peak_memory_mb: float | None = None
 
     hardware: HardwareInfo
