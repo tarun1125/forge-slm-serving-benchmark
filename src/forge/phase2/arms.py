@@ -22,9 +22,10 @@ no-batching baseline). MLX_LM_ARGS below forces --decode-concurrency 1
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from forge.config import Settings
 
 MODELS_DIR = Path("models")
 
@@ -129,33 +130,57 @@ def vllm_metal_arm(
     )
 
 
-def hosted_api_arm(provider: str) -> ArmConfig:
-    """provider: "groq" | "nim". Requires GROQ_API_KEY / NIM_API_KEY in the
-    environment — raises loudly if missing rather than silently skipping
-    the arm, per AGENTS.md's "no raw dicts / validate at the boundary" spirit
-    applied to config as much as request bodies."""
+def hosted_api_arm(provider: str, settings: Settings | None = None) -> ArmConfig:
+    """provider: "groq" | "nim". Requires GROQ_API_KEY / NIM_API_KEY in
+    Settings (from .env) — raises loudly if missing rather than silently
+    skipping the arm, per AGENTS.md's "no raw dicts / validate at the
+    boundary" spirit applied to config as much as request bodies. Reads
+    through forge.config.Settings, not os.environ directly — an earlier
+    version read os.environ.get(...) here, which this module's own
+    docstring already said not to do, and never actually saw the key at
+    runtime (pydantic-settings loads .env into Settings' own fields, not
+    into the process environment — os.environ.get("GROQ_API_KEY") was
+    silently None the whole time this went unnoticed).
+
+    model_id was originally llama-3.3-70b-versatile per the plan's own
+    resume-entry text — confirmed dead against the real key: a live call
+    returns 404 model_not_found, and client.models.list() shows no Llama
+    models on this account at all (Groq appears to have moved that model,
+    and Llama models generally, to enterprise-only access at some point
+    before this was checked). openai/gpt-oss-120b is the largest
+    general-purpose model this key can actually reach, confirmed via
+    models.list(), with confirmed real pricing ($0.15/$0.60 per 1M input/
+    output tokens) — the right fit for "the big hosted model you'd reach
+    for instead of self-hosting," not a downgrade in spirit even though
+    the specific model changed. Re-check client.models.list() before
+    trusting this if it's been a while — this account's available models
+    already changed once mid-project.
+    """
+    if settings is None:
+        from forge.config import get_settings
+
+        settings = get_settings()
+
     if provider == "groq":
-        api_key = os.environ.get("GROQ_API_KEY")
-        if not api_key:
+        if not settings.groq_api_key:
             raise RuntimeError("GROQ_API_KEY not set — see .env.example")
         return ArmConfig(
             name="hosted_api",
             model_variant="groq",
             base_url="https://api.groq.com/openai/v1",
-            model_id="llama-3.3-70b-versatile",
-            api_key=api_key,
+            model_id="openai/gpt-oss-120b",
+            api_key=settings.groq_api_key,
             launch_command=None,
         )
     if provider == "nim":
-        api_key = os.environ.get("NIM_API_KEY")
-        if not api_key:
+        if not settings.nim_api_key:
             raise RuntimeError("NIM_API_KEY not set — see .env.example")
         return ArmConfig(
             name="hosted_api",
             model_variant="nim",
             base_url="https://integrate.api.nvidia.com/v1",
             model_id="meta/llama-3.1-70b-instruct",
-            api_key=api_key,
+            api_key=settings.nim_api_key,
             launch_command=None,
         )
     raise ValueError(f"Unknown hosted API provider: {provider!r} (expected 'groq' or 'nim')")
