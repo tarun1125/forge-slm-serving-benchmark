@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  lint-type-test:
+    runs-on: macos-14 # arm64 runner — this repo's mlx dependency does not build on x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.12.5"
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: ruff check
+        run: uv run ruff check .
+
+      - name: ruff format --check
+        run: uv run ruff format --check .
+
+      - name: mypy
+        run: uv run mypy src
+
+      - name: pytest
+        run: uv run pytest -v
+
+  pip-audit:
+    if: github.event_name == 'pull_request'
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.12.5"
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: pip-audit (fail on any known vulnerability)
+        # Two vulnerabilities are ignored here, both documented risk acceptances,
+        # not oversights — re-check on every dependency bump:
+        #
+        # CVE-2026-71211 (mlflow 3.15.2, latest release, no fix yet): SSRF in the
+        # AI Gateway's gateway-secret/proxy path. FORGE only uses mlflow for local
+        # experiment tracking (log_param/log_metric/log_artifact) and never runs
+        # the AI Gateway server — this attack surface is not reachable here.
+        #
+        # PYSEC-2026-3552 (cryptography, fixed in 50.0.0): a Bleichenbacher oracle
+        # in pkcs7_decrypt_der/pem/smime. mlflow 3.15.2 itself pins
+        # cryptography<50, so this cannot be independently bumped while mlflow is
+        # a dependency — it is blocked upstream, not unfixed by choice. FORGE
+        # never calls any pkcs7_decrypt_* API (the vulnerable path requires a
+        # service that auto-decrypts attacker-supplied S/MIME), so it is also not
+        # reachable in this codebase's own usage.
+        #
+        # Drop whichever ignore no longer applies the moment its fix ships.
+        run: uv run pip-audit --strict --ignore-vuln CVE-2026-71211 --ignore-vuln PYSEC-2026-3552
