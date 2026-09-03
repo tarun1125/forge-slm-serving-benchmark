@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-09-03T10:24:41.724652+00:00",
+  "base_model": "mlx-community/Qwen2.5-Coder-1.5B-Instruct-bf16",
+  "adapter_path_hash": "sha256:5b88bc4f5548dbbca764e8881abd96c56bcf51ac2ca718fb84eb850762596839",
+  "hardware": {
+    "machine": "arm64",
+    "macos_version": "26.5",
+    "chip": "Apple M5 Pro",
+    "cpu_core_count": 15,
+    "gpu_core_count": 16,
+    "unified_memory_gb": 24.0
+  },
+  "parity_check": {
+    "passed": true,
+    "exact_match_rate": 0.9,
+    "n_cases": 50,
+    "report_path": "results/parity_check_report.json"
+  },
+  "variants": [
+    {
+      "name": "bf16",
+      "path": "models/fused-bf16",
+      "format": "mlx",
+      "hash": "sha256:fe94bc391c499ff92885da0c6f47c66e29d3ccf91e562608442d2da1e85783ff",
+      "size_bytes": 3098917088
+    },
+    {
+      "name": "8bit",
+      "path": "models/fused-8bit",
+      "format": "mlx",
+      "hash": "sha256:0a433c3400dba601d3a156497256b84bfc4ad436ac1748eaa5a70809475a50ee",
+      "size_bytes": 1651892019
+    },
+    {
+      "name": "4bit",
+      "path": "models/fused-4bit",
+      "format": "mlx",
+      "hash": "sha256:06b6843ee45449293e7b3888cc5ea3b2751c1570130361d3033b840a4955f541",
+      "size_bytes": 880106739
+    }
+  ]
+}

@@ -1,0 +1,515 @@
+{
+  "run_id": "917be619-0b1b-4c72-8665-1a6486c87cfe",
+  "fused_path": "models/fused-bf16",
+  "n_cases": 50,
+  "seed": 42,
+  "exact_match_rate": 0.9,
+  "exact_match_sanity_floor": 0.7,
+  "skipped_atlas": false,
+  "adapter_execution_correct": 20,
+  "fused_execution_correct": 21,
+  "regressions": [],
+  "passed": true,
+  "cases": [
+    {
+      "id": "spider-chinook_1-13",
+      "database": "chinook_1",
+      "complexity": "medium",
+      "adapter_output": "db.Track.aggregate([{\"$match\": {\"GenreId\": {\"$in\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50]}}}, {\"$group\": {\"_id\": None, \"count\": {\"$sum\": 1}}}, {\"$project\": {\"_id\": 0, \"count\": 1}}])",
+      "fused_output": "db.Track.aggregate([{\"$match\": {\"GenreId\": {\"$in\": [1]}}}, {\"$group\": {\"_id\": None, \"count\": {\"$sum\": 1}}}, {\"$project\": {\"_id\": 0, \"count\": 1}}])",
+      "text_match": false,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-world_1-2",
+      "database": "world_1",
+      "complexity": "hard",
+      "adapter_output": "db.country.aggregate([{\"$lookup\": {\"from\": \"countrylanguage\", \"localField\": \"Code\", \"foreignField\": \"CountryCode\", \"as\": \"cl\"}}, {\"$unwind\": \"$cl\"}, {\"$group\": {\"_id\": \"$Continent\", \"langs\": {\"$addToSet\": \"$cl.Language\"}}}, {\"$sort\": {\"langs\": -1}}, {\"$limit\": 1}, {\"$project\": {\"_id\": 0, \"Continent\": \"$_id\"}}])",
+      "fused_output": "db.country.aggregate([{\"$lookup\": {\"from\": \"countrylanguage\", \"localField\": \"Code\", \"foreignField\": \"CountryCode\", \"as\": \"cl\"}}, {\"$unwind\": \"$cl\"}, {\"$group\": {\"_id\": \"$Continent\", \"langs\": {\"$addToSet\": \"$cl.Language\"}}}, {\"$sort\": {\"langs\": -1}}, {\"$limit\": 1}, {\"$project\": {\"_id\": 0, \"Continent\": \"$_id\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-bike_1-18",
+      "database": "bike_1",
+      "complexity": "medium",
+      "adapter_output": "db.station.aggregate([{\"$match\": {\"bikes_available\": {\"$ne\": 10}}}, {\"$group\": {\"_id\": None, \"avg_long\": {\"$avg\": \"$long\"}}}, {\"$project\": {\"_id\": 0, \"avg_long\": 1}}])",
+      "fused_output": "db.station.aggregate([{\"$match\": {\"bikes_available\": {\"$ne\": 10}}}, {\"$group\": {\"_id\": None, \"avg_long\": {\"$avg\": \"$long\"}}}, {\"$project\": {\"_id\": 0, \"avg_long\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_1-30",
+      "database": "college_1",
+      "complexity": "medium",
+      "adapter_output": "db.CLASS.aggregate([{\"$group\": {\"_id\": \"$CLASS_ROOM\", \"count\": {\"$sum\": 1}}}, {\"$match\": {\"count\": {\"$gte\": 2}}}, {\"$count\": \"count\"}])",
+      "fused_output": "db.CLASS.aggregate([{\"$group\": {\"_id\": \"$CLASS_ROOM\", \"count\": {\"$sum\": 1}}}, {\"$match\": {\"count\": {\"$gte\": 2}}}, {\"$count\": \"count\"}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_1-140",
+      "database": "college_1",
+      "complexity": null,
+      "adapter_output": "db.COURSE.aggregate([{\"$group\": {\"_id\": \"$CRS_CODE\"}}, {\"$count\": \"count\"}])",
+      "fused_output": "db.COURSE.aggregate([{\"$group\": {\"_id\": \"$CRS_CODE\"}}, {\"$count\": \"count\"}])",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-flight_4-26",
+      "database": "flight_4",
+      "complexity": "easy",
+      "adapter_output": "db.airlines.count_documents({\"country\": \"Russia\"})",
+      "fused_output": "db.airlines.count_documents({\"country\": \"Russia\"})",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-world_1-35",
+      "database": "world_1",
+      "complexity": "easy",
+      "adapter_output": "db.country.find({\"Name\": \"Angola\"}, {\"_id\": 0, \"Region\": 1, \"Population\": 1})",
+      "fused_output": "db.country.find({\"Name\": \"Angola\"}, {\"_id\": 0, \"Region\": 1, \"Population\": 1})",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-world_1-85",
+      "database": "world_1",
+      "complexity": "easy",
+      "adapter_output": "db.country.aggregate([{\"$match\": {\"Continent\": \"Africa\"}}, {\"$group\": {\"_id\": \"$GovernmentForm\"}}, {\"$count\": \"count\"}])",
+      "fused_output": "db.country.aggregate([{\"$match\": {\"Continent\": \"Africa\"}}, {\"$group\": {\"_id\": \"$GovernmentForm\"}}, {\"$count\": \"count\"}])",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-college_1-6",
+      "database": "college_1",
+      "complexity": "hard",
+      "adapter_output": "db.STUDENT.aggregate([{\"$group\": {\"_id\": \"$DEPT_CODE\", \"count\": {\"$sum\": 1}}}, {\"$sort\": {\"count\": -1}}, {\"$limit\": 1}, {\"$lookup\": {\"from\": \"DEPARTMENT\", \"localField\": \"_id\", \"foreignField\": \"DEPT_CODE\", \"as\": \"d\"}}, {\"$unwind\": \"$d\"}, {\"$project\": {\"_id\": 0, \"DEPT_NAME\": \"$d.DEPT_NAME\"}}])",
+      "fused_output": "db.STUDENT.aggregate([{\"$group\": {\"_id\": \"$DEPT_CODE\", \"count\": {\"$sum\": 1}}}, {\"$sort\": {\"count\": -1}}, {\"$limit\": 1}, {\"$lookup\": {\"from\": \"DEPARTMENT\", \"localField\": \"_id\", \"foreignField\": \"DEPT_CODE\", \"as\": \"d\"}}, {\"$unwind\": \"$d\"}, {\"$project\": {\"_id\": 0, \"DEPT_NAME\": \"$d.DEPT_NAME\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_1-81",
+      "database": "college_1",
+      "complexity": "medium",
+      "adapter_output": "db.CLASS.aggregate([{\"$lookup\": {\"from\": \"COURSE\", \"localField\": \"CRS_CODE\", \"foreignField\": \"CRS_CODE\", \"as\": \"c\"}}, {\"$unwind\": \"$c\"}, {\"$match\": {\"c.CRS_DESCRIPTION\": {\"$regex\": \"Statistics\", \"$options\": \"i\"}}}, {\"$lookup\": {\"from\": \"DEPARTMENT\", \"localField\": \"c.DEPT_CODE\", \"foreignField\": \"DEPT_CODE\", \"as\": \"d\"}}, {\"$unwind\": \"$d\"}, {\"$project\": {\"_id\": 0, \"DEPT_NAME\": \"$d.DEPT_NAME\"}}])",
+      "fused_output": "db.CLASS.aggregate([{\"$lookup\": {\"from\": \"COURSE\", \"localField\": \"CRS_CODE\", \"foreignField\": \"CRS_CODE\", \"as\": \"c\"}}, {\"$unwind\": \"$c\"}, {\"$match\": {\"c.CRS_DESCRIPTION\": {\"$regex\": \"Statistics\", \"$options\": \"i\"}}}, {\"$lookup\": {\"from\": \"DEPARTMENT\", \"localField\": \"c.DEPT_CODE\", \"foreignField\": \"DEPT_CODE\", \"as\": \"d\"}}, {\"$unwind\": \"$d\"}, {\"$project\": {\"_id\": 0, \"DEPT_NAME\": \"$d.DEPT_NAME\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_2-87",
+      "database": "college_2",
+      "complexity": null,
+      "adapter_output": "db.course.aggregate([{\"$match\": {\"year\": 2008}}, {\"$lookup\": {\"from\": \"instructor\", \"localField\": \"instructor\", \"foreignField\": \"ID\", \"as\": \"i\"}}, {\"$unwind\": \"$i\"}, {\"$project\": {\"_id\": 0, \"title\": 1, \"name\": \"$i.name\"}}, {\"$sort\": {\"title\": 1}}])",
+      "fused_output": "db.course.aggregate([{\"$match\": {\"year\": 2008}}, {\"$lookup\": {\"from\": \"instructor\", \"localField\": \"instructor\", \"foreignField\": \"ID\", \"as\": \"i\"}}, {\"$unwind\": \"$i\"}, {\"$project\": {\"_id\": 0, \"title\": 1, \"name\": \"$i.name\"}}, {\"$sort\": {\"title\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_2-111",
+      "database": "college_2",
+      "complexity": null,
+      "adapter_output": "db.department.find({}, {\"_id\": 0, \"dept_name\": 1, \"building\": 1}).sort({\"budget\": -1})",
+      "fused_output": "db.department.find({}, {\"_id\": 0, \"dept_name\": 1, \"building\": 1}).sort({\"budget\": -1})",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": 6,
+      "database": "pets_1",
+      "complexity": "medium",
+      "adapter_output": "db.Pets.aggregate([{\"$group\": {\"_id\": \"$PetType\", \"count\": {\"$sum\": 1}}}, {\"$match\": {\"count\": {\"$gt\": 1}}}, {\"$project\": {\"_id\": 0, \"PetType\": \"$_id\", \"count\": 1}}])",
+      "fused_output": "db.Pets.aggregate([{\"$group\": {\"_id\": \"$PetType\", \"count\": {\"$sum\": 1}}}, {\"$match\": {\"count\": {\"$gt\": 1}}}, {\"$project\": {\"_id\": 0, \"PetType\": \"$_id\", \"count\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "cs-e10",
+      "database": "concert_singer",
+      "complexity": "easy",
+      "adapter_output": "db.concert.find({\"concert_Name\": \"Super bootcamp\"}, {\"_id\": 0, \"Theme\": 1})",
+      "fused_output": "db.concert.find({\"concert_Name\": \"Super bootcamp\"}, {\"_id\": 0, \"Theme\": 1})",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-dog_kennels-12",
+      "database": "dog_kennels",
+      "complexity": "medium",
+      "adapter_output": "db.Dogs.aggregate([{\"$lookup\": {\"from\": \"Treatments\", \"localField\": \"dog_id\", \"foreignField\": \"dog_id\", \"as\": \"t\"}}, {\"$unwind\": \"$t\"}, {\"$group\": {\"_id\": None, \"avg_age\": {\"$avg\": \"$weight\"}}}, {\"$project\": {\"_id\": 0, \"avg_age\": 1}}])",
+      "fused_output": "db.Dogs.aggregate([{\"$lookup\": {\"from\": \"Treatments\", \"localField\": \"dog_id\", \"foreignField\": \"dog_id\", \"as\": \"t\"}}, {\"$unwind\": \"$t\"}, {\"$group\": {\"_id\": None, \"avg_age\": {\"$avg\": \"$weight\"}}}, {\"$project\": {\"_id\": 0, \"avg_age\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_2-141",
+      "database": "college_2",
+      "complexity": null,
+      "adapter_output": "db.advisor.aggregate([{\"$lookup\": {\"from\": \"instructor\", \"localField\": \"i_ID\", \"foreignField\": \"ID\", \"as\": \"i\"}}, {\"$unwind\": \"$i\"}, {\"$lookup\": {\"from\": \"course\", \"localField\": \"course_id\", \"foreignField\": \"course_id\", \"as\": \"c\"}}, {\"$unwind\": \"$c\"}, {\"$match\": {\"c.dept_name\": \"History\"}}, {\"$project\": {\"_id\": 0, \"name\": \"$i.name\", \"salary\": \"$i.salary\"}}])",
+      "fused_output": "db.advisor.aggregate([{\"$lookup\": {\"from\": \"instructor\", \"localField\": \"i_ID\", \"foreignField\": \"ID\", \"as\": \"i\"}}, {\"$unwind\": \"$i\"}, {\"$lookup\": {\"from\": \"course\", \"localField\": \"course_id\", \"foreignField\": \"course_id\", \"as\": \"c\"}}, {\"$unwind\": \"$c\"}, {\"$match\": {\"c.dept_name\": \"History\"}}, {\"$project\": {\"_id\": 0, \"name\": \"$i.name\", \"salary\": \"$i.salary\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "dk-e3",
+      "database": "dog_kennels",
+      "complexity": "easy",
+      "adapter_output": "db.Dogs.aggregate([{\"$lookup\": {\"from\": \"Treatments\", \"localField\": \"dog_id\", \"foreignField\": \"dog_id\", \"as\": \"t\"}}, {\"$match\": {\"t\": {\"$ne\": []}}}, {\"$count\": \"count\"}])",
+      "fused_output": "db.Dogs.aggregate([{\"$lookup\": {\"from\": \"Treatments\", \"localField\": \"dog_id\", \"foreignField\": \"dog_id\", \"as\": \"t\"}}, {\"$match\": {\"t\": {\"$ne\": []}}}, {\"$count\": \"count\"}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_1-36",
+      "database": "college_1",
+      "complexity": "medium",
+      "adapter_output": "db.STUDENT.aggregate([{\"$group\": {\"_id\": \"$DEPT_CODE\", \"total_hrs\": {\"$sum\": \"$STU_HRS\"}}}, {\"$project\": {\"_id\": 0, \"DEPT_CODE\": \"$_id\", \"total_hrs\": 1}}])",
+      "fused_output": "db.STUDENT.aggregate([{\"$group\": {\"_id\": \"$DEPT_CODE\", \"total_hrs\": {\"$sum\": \"$STU_HRS\"}}}, {\"$project\": {\"_id\": 0, \"DEPT_CODE\": \"$_id\", \"total_hrs\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_2-66",
+      "database": "college_2",
+      "complexity": "medium",
+      "adapter_output": "db.instructor.aggregate([{\"$lookup\": {\"from\": \"teaches\", \"localField\": \"ID\", \"foreignField\": \"ID\", \"as\": \"t\"}}, {\"$match\": {\"t\": {\"$eq\": []}}}, {\"$project\": {\"_id\": 0, \"name\": 1}}])",
+      "fused_output": "db.instructor.aggregate([{\"$lookup\": {\"from\": \"teaches\", \"localField\": \"ID\", \"foreignField\": \"ID\", \"as\": \"t\"}}, {\"$match\": {\"t\": {\"$eq\": []}}}, {\"$project\": {\"_id\": 0, \"name\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-pets_1-10",
+      "database": "pets_1",
+      "complexity": "medium",
+      "adapter_output": "db.Has_Pet.aggregate([{\"$lookup\": {\"from\": \"Pets\", \"localField\": \"PetID\", \"foreignField\": \"PetID\", \"as\": \"pet\"}}, {\"$unwind\": \"$pet\"}, {\"$match\": {\"pet.PetType\": \"cat\"}}, {\"$group\": {\"_id\": \"$StuID\"}}, {\"$project\": {\"_id\": 0, \"StuID\": \"$_id\"}}])",
+      "fused_output": "db.Has_Pet.aggregate([{\"$lookup\": {\"from\": \"Pets\", \"localField\": \"PetID\", \"foreignField\": \"PetID\", \"as\": \"pet\"}}, {\"$unwind\": \"$pet\"}, {\"$match\": {\"pet.PetType\": \"cat\"}}, {\"$group\": {\"_id\": \"$StuID\"}}, {\"$project\": {\"_id\": 0, \"StuID\": \"$_id\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-wta_1-1",
+      "database": "wta_1",
+      "complexity": null,
+      "adapter_output": "db.matches.aggregate([{\"$group\": {\"_id\": \"$tourney_id\", \"count\": {\"$sum\": 1}}}, {\"$match\": {\"count\": {\"$gt\": 10}}}, {\"$project\": {\"_id\": 0, \"tourney_name\": \"$_id\"}}])",
+      "fused_output": "db.matches.aggregate([{\"$group\": {\"_id\": \"$tourney_id\", \"count\": {\"$sum\": 1}}}, {\"$match\": {\"count\": {\"$gt\": 10}}}, {\"$project\": {\"_id\": 0, \"tourney_name\": \"$_id\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-apartment_rentals-59",
+      "database": "apartment_rentals",
+      "complexity": "easy",
+      "adapter_output": "db.Apartment_Buildings.aggregate([{\"$lookup\": {\"from\": \"Apartment_Facilities\", \"localField\": \"building_id\", \"foreignField\": \"apt_id\", \"as\": \"fac\"}}, {\"$unwind\": \"$fac\"}, {\"$match\": {\"fac.facility_code\": \"Brenden\"}}, {\"$lookup\": {\"from\": \"Building_Managers\", \"localField\": \"building_id\", \"foreignField\": \"building_id\", \"as\": \"man\"}}, {\"$unwind\": \"$man\"}, {\"$project\": {\"_id\": 0, \"building_full_name\": 1, \"building_phone\": 1}}])",
+      "fused_output": "db.Apartment_Buildings.aggregate([{\"$lookup\": {\"from\": \"Apartment_Facilities\", \"localField\": \"building_id\", \"foreignField\": \"apt_id\", \"as\": \"fac\"}}, {\"$unwind\": \"$fac\"}, {\"$match\": {\"fac.facility_code\": \"Brenden\"}}, {\"$lookup\": {\"from\": \"Building_Managers\", \"localField\": \"building_id\", \"foreignField\": \"building_id\", \"as\": \"man\"}}, {\"$unwind\": \"$man\"}, {\"$project\": {\"_id\": 0, \"building_full_name\": 1, \"building_phone\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_2-3",
+      "database": "college_2",
+      "complexity": "hard",
+      "adapter_output": "db.course.aggregate([{\"$match\": {\"year\": 2008}}, {\"$lookup\": {\"from\": \"instructor\", \"localField\": \"instructor\", \"foreignField\": \"ID\", \"as\": \"i\"}}, {\"$unwind\": \"$i\"}, {\"$project\": {\"_id\": 0, \"title\": 1, \"name\": \"$i.name\"}}, {\"$sort\": {\"title\": 1}}])",
+      "fused_output": "db.course.aggregate([{\"$match\": {\"year\": 2008}}, {\"$lookup\": {\"from\": \"instructor\", \"localField\": \"instructor\", \"foreignField\": \"ID\", \"as\": \"i\"}}, {\"$unwind\": \"$i\"}, {\"$project\": {\"_id\": 0, \"title\": 1, \"name\": \"$i.name\"}}, {\"$sort\": {\"title\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_1-142",
+      "database": "college_1",
+      "complexity": null,
+      "adapter_output": "db.CLASS.aggregate([{\"$match\": {\"CRS_CODE\": \"ACCT-211\"}}, {\"$group\": {\"_id\": None, \"count\": {\"$sum\": 1}}}, {\"$project\": {\"_id\": 0, \"count\": 1}}])",
+      "fused_output": "db.CLASS.aggregate([{\"$match\": {\"CRS_CODE\": \"ACCT-211\"}}, {\"$group\": {\"_id\": \"$CLASS_SECTION\"}}, {\"$count\": \"count\"}])",
+      "text_match": false,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-car_1-114",
+      "database": "car_1",
+      "complexity": "medium",
+      "adapter_output": "db.model_list.json.aggregate([{\"$lookup\": {\"from\": \"car_names\", \"localField\": \"Model\", \"foreignField\": \"Model\", \"as\": \"model\"}}, {\"$unwind\": \"$model\"}, {\"$match\": {\"model.Maker\": \"Volvo\"}}, {\"$group\": {\"_id\": \"$model.Cylinders\", \"min_accel\": {\"$min\": \"$car_makers.Accelerate\"}}}, {\"$sort\": {\"min_accel\": 1}}, {\"$limit\": 1}, {\"$project\": {\"_id\": 0, \"Cylinders\": \"$_id\"}}])",
+      "fused_output": "db.model_list.json.aggregate([{\"$lookup\": {\"from\": \"car_names\", \"localField\": \"Model\", \"foreignField\": \"Model\", \"as\": \"model\"}}, {\"$unwind\": \"$model\"}, {\"$match\": {\"model.Maker\": \"Volvo\"}}, {\"$group\": {\"_id\": \"$model.Cylinders\", \"min_accel\": {\"$min\": \"$car_makers.Accelerate\"}}}, {\"$sort\": {\"min_accel\": 1}}, {\"$limit\": 1}, {\"$project\": {\"_id\": 0, \"Cylinders\": \"$_id\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-network_1-18",
+      "database": "network_1",
+      "complexity": "easy",
+      "adapter_output": "db.Highschooler.find({}, {\"_id\": 0, \"grade\": 1})",
+      "fused_output": "db.Highschooler.find({}, {\"_id\": 0, \"grade\": 1})",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-car_1-29",
+      "database": "car_1",
+      "complexity": "medium",
+      "adapter_output": "db.cars_data.aggregate([{\"$group\": {\"_id\": \"$Cylinders\", \"max_accelerate\": {\"$max\": \"$Accelerate\"}}}, {\"$project\": {\"_id\": 0, \"Cylinders\": \"$_id\", \"max_accelerate\": 1}}])",
+      "fused_output": "db.cars_data.aggregate([{\"$group\": {\"_id\": \"$Cylinders\", \"max_accelerate\": {\"$max\": \"$Accelerate\"}}}, {\"$project\": {\"_id\": 0, \"Cylinders\": \"$_id\", \"max_accelerate\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "car-m3",
+      "database": "car_1",
+      "complexity": "medium",
+      "adapter_output": "db.cars_data.aggregate([{\"$group\": {\"_id\": None, \"avg_weight\": {\"$avg\": \"$Weight\"}}}, {\"$project\": {\"_id\": 0, \"avg_weight\": 1}}])",
+      "fused_output": "db.cars_data.aggregate([{\"$group\": {\"_id\": None, \"avg_weight\": {\"$avg\": \"$Weight\"}}}, {\"$project\": {\"_id\": 0, \"avg_weight\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-hr_1-65",
+      "database": "hr_1",
+      "complexity": null,
+      "adapter_output": "db.employees.aggregate([{\"$group\": {\"_id\": \"$DEPARTMENT_ID\", \"count\": {\"$sum\": 1}}}, {\"$match\": {\"count\": {\"$gt\": 10}}}, {\"$project\": {\"_id\": 0, \"DEPARTMENT_ID\": \"$_id\"}}])",
+      "fused_output": "db.employees.aggregate([{\"$group\": {\"_id\": \"$DEPARTMENT_ID\", \"count\": {\"$sum\": 1}}}, {\"$match\": {\"count\": {\"$gt\": 10}}}, {\"$project\": {\"_id\": 0, \"DEPARTMENT_ID\": \"$_id\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-store_1-25",
+      "database": "store_1",
+      "complexity": "medium",
+      "adapter_output": "db.employees.find({}, {\"_id\": 0, \"first_name\": 1, \"last_name\": 1}).sort({\"hire_date\": 1}).limit(1)",
+      "fused_output": "db.employees.find({}, {\"_id\": 0, \"first_name\": 1, \"last_name\": 1}).sort({\"hire_date\": 1}).limit(1)",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-flight_4-12",
+      "database": "flight_4",
+      "complexity": "medium",
+      "adapter_output": "db.airports.find({}, {\"_id\": 0, \"name\": 1, \"city\": 1, \"country\": 1}).sort({\"elevation\": 1}).limit(1)",
+      "fused_output": "db.airports.find({}, {\"_id\": 0, \"name\": 1, \"city\": 1, \"country\": 1}).sort({\"elevation\": 1}).limit(1)",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-college_2-102",
+      "database": "college_2",
+      "complexity": null,
+      "adapter_output": "db.instructor.aggregate([{\"$match\": {\"dept_name\": \"Statistics\"}}, {\"$group\": {\"_id\": None, \"min_salary\": {\"$min\": \"$salary\"}}}, {\"$project\": {\"_id\": 0, \"name\": \"$_id\"}}])",
+      "fused_output": "db.instructor.aggregate([{\"$match\": {\"dept_name\": \"Statistics\"}}, {\"$group\": {\"_id\": None, \"min_salary\": {\"$min\": \"$salary\"}}}, {\"$project\": {\"_id\": 0, \"name\": \"$_id\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_2-166",
+      "database": "college_2",
+      "complexity": null,
+      "adapter_output": "db.instructor.aggregate([{\"$group\": {\"_id\": \"$dept_name\", \"avg_salary\": {\"$avg\": \"$salary\"}}}, {\"$match\": {\"avg_salary\": {\"$gt\": 42000}}}, {\"$project\": {\"_id\": 0, \"dept_name\": \"$_id\", \"avg_salary\": 1}}])",
+      "fused_output": "db.instructor.aggregate([{\"$group\": {\"_id\": \"$dept_name\", \"avg_salary\": {\"$avg\": \"$salary\"}}}, {\"$match\": {\"avg_salary\": {\"$gt\": 42000}}}, {\"$project\": {\"_id\": 0, \"dept_name\": \"$_id\", \"avg_salary\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-store_1-2",
+      "database": "store_1",
+      "complexity": "hard",
+      "adapter_output": "db.invoices.aggregate([{\"$lookup\": {\"from\": \"customers\", \"localField\": \"customer_id\", \"foreignField\": \"id\", \"as\": \"c\"}}, {\"$unwind\": \"$c\"}, {\"$group\": {\"_id\": \"$c.id\", \"first_name\": {\"$first\": \"$c.first_name\"}, \"last_name\": {\"$first\": \"$c.last_name\"}, \"total\": {\"$sum\": \"$total\"}}}, {\"$sort\": {\"total\": -1}}, {\"$limit\": 10}, {\"$project\": {\"_id\": 0, \"first_name\": 1, \"last_name\": 1, \"total\": 1}}])",
+      "fused_output": "db.invoices.aggregate([{\"$lookup\": {\"from\": \"customers\", \"localField\": \"customer_id\", \"foreignField\": \"id\", \"as\": \"c\"}}, {\"$unwind\": \"$c\"}, {\"$group\": {\"_id\": \"$c.id\", \"first_name\": {\"$first\": \"$c.first_name\"}, \"last_name\": {\"$first\": \"$c.last_name\"}, \"total\": {\"$sum\": \"$total\"}}}, {\"$sort\": {\"total\": -1}}, {\"$limit\": 10}, {\"$project\": {\"_id\": 0, \"first_name\": 1, \"last_name\": 1, \"total\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-store_1-29",
+      "database": "store_1",
+      "complexity": "medium",
+      "adapter_output": "db.customers.aggregate([{\"$match\": {\"first_name\": \"Lucas\", \"last_name\": \"Mancini\"}}, {\"$lookup\": {\"from\": \"invoices\", \"localField\": \"id\", \"foreignField\": \"customer_id\", \"as\": \"inv\"}}, {\"$unwind\": \"$inv\"}, {\"$group\": {\"_id\": None, \"total\": {\"$sum\": \"$inv.total\"}}}, {\"$project\": {\"_id\": 0, \"total\": 1}}])",
+      "fused_output": "db.customers.aggregate([{\"$match\": {\"first_name\": \"Lucas\", \"last_name\": \"Mancini\"}}, {\"$lookup\": {\"from\": \"invoices\", \"localField\": \"id\", \"foreignField\": \"customer_id\", \"as\": \"inv\"}}, {\"$unwind\": \"$inv\"}, {\"$group\": {\"_id\": None, \"total\": {\"$sum\": \"$inv.total\"}}}, {\"$project\": {\"_id\": 0, \"total\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-college_2-106",
+      "database": "college_2",
+      "complexity": null,
+      "adapter_output": "db.student.aggregate([{\"$match\": {\"year\": {\"$in\": [\"2009\", \"2010\"]}}}, {\"$lookup\": {\"from\": \"takes\", \"localField\": \"ID\", \"foreignField\": \"ID\", \"as\": \"takes\"}}, {\"$unwind\": \"$takes\"}, {\"$lookup\": {\"from\": \"course\", \"localField\": \"takes.course_id\", \"foreignField\": \"course_id\", \"as\": \"course\"}}, {\"$unwind\": \"$course\"}, {\"$project\": {\"_id\": 0, \"name\": \"$name\"}}])",
+      "fused_output": "db.student.aggregate([{\"$match\": {\"year\": {\"$in\": [\"2009\", \"2010\"]}}}, {\"$lookup\": {\"from\": \"takes\", \"localField\": \"ID\", \"foreignField\": \"ID\", \"as\": \"takes\"}}, {\"$unwind\": \"$takes\"}, {\"$lookup\": {\"from\": \"course\", \"localField\": \"takes.course_id\", \"foreignField\": \"course_id\", \"as\": \"course\"}}, {\"$unwind\": \"$course\"}, {\"$project\": {\"_id\": 0, \"name\": \"$name\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-csu_1-21",
+      "database": "csu_1",
+      "complexity": "easy",
+      "adapter_output": "db.DEPARTMENT.aggregate([{\"$match\": {\"County\": \"Los Angeles\"}}, {\"$match\": {\"EMP_DOB\": {\"$gte\": \"1950-01-01\"}}}, {\"$group\": {\"_id\": \"$SCHOOL_CODE\"}}, {\"$project\": {\"_id\": 0, \"SCHOOL_CODE\": \"$_id\"}}])",
+      "fused_output": "db.DEPARTMENT.aggregate([{\"$match\": {\"County\": \"Los Angeles\"}}, {\"$match\": {\"EMP_DOB\": {\"$gte\": \"1950-01-01\"}}}, {\"$group\": {\"_id\": \"$SCHOOL_CODE\"}}, {\"$project\": {\"_id\": 0, \"SCHOOL_CODE\": \"$_id\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_2-14",
+      "database": "college_2",
+      "complexity": "medium",
+      "adapter_output": "db.student.aggregate([{\"$lookup\": {\"from\": \"takes\", \"localField\": \"ID\", \"foreignField\": \"ID\", \"as\": \"takes\"}}, {\"$unwind\": \"$takes\"}, {\"$lookup\": {\"from\": \"course\", \"localField\": \"takes.course_id\", \"foreignField\": \"course_id\", \"as\": \"course\"}}, {\"$unwind\": \"$course\"}, {\"$match\": {\"course.dept_name\": \"History\"}}, {\"$group\": {\"_id\": \"$name\", \"total_credits\": {\"$sum\": \"$course.tot_cred\"}}}, {\"$sort\": {\"total_credits\": -1}}, {\"$limit\": 1}, {\"$project\": {\"_id\": 0, \"name\": \"$_id\"}}])",
+      "fused_output": "db.student.aggregate([{\"$lookup\": {\"from\": \"takes\", \"localField\": \"ID\", \"foreignField\": \"ID\", \"as\": \"takes\"}}, {\"$unwind\": \"$takes\"}, {\"$lookup\": {\"from\": \"course\", \"localField\": \"takes.course_id\", \"foreignField\": \"course_id\", \"as\": \"course\"}}, {\"$unwind\": \"$course\"}, {\"$match\": {\"course.dept_name\": \"History\"}}, {\"$group\": {\"_id\": \"$name\", \"total_credits\": {\"$sum\": \"$course.tot_cred\"}}}, {\"$sort\": {\"total_credits\": -1}}, {\"$limit\": 1}, {\"$project\": {\"_id\": 0, \"name\": \"$_id\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-network_1-23",
+      "database": "network_1",
+      "complexity": "medium",
+      "adapter_output": "db.Friend.aggregate([{\"$group\": {\"_id\": \"$student_id\"}}, {\"$lookup\": {\"from\": \"Likes\", \"localField\": \"_id\", \"foreignField\": \"student_id\", \"as\": \"likes\"}}, {\"$unwind\": \"$likes\"}, {\"$lookup\": {\"from\": \"Highschooler\", \"localField\": \"likes.liked_id\", \"foreignField\": \"ID\", \"as\": \"highschooler\"}}, {\"$unwind\": \"$highschooler\"}, {\"$project\": {\"_id\": 0, \"name\": \"$highschooler.name\"}}])",
+      "fused_output": "db.Friend.aggregate([{\"$group\": {\"_id\": \"$student_id\"}}, {\"$lookup\": {\"from\": \"Likes\", \"localField\": \"_id\", \"foreignField\": \"student_id\", \"as\": \"likes\"}}, {\"$unwind\": \"$likes\"}, {\"$lookup\": {\"from\": \"Highschooler\", \"localField\": \"likes.liked_id\", \"foreignField\": \"ID\", \"as\": \"highschooler\"}}, {\"$unwind\": \"$highschooler\"}, {\"$project\": {\"_id\": 0, \"name\": \"$highschooler.name\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-college_3-15",
+      "database": "college_3",
+      "complexity": "medium",
+      "adapter_output": "db.Course.find({\"CName\": \"INTRODUCTION TO COMPUTER SCIENCE\"}, {\"_id\": 0, \"DNO\": 1, \"Room\": 1})",
+      "fused_output": "db.Course.find({\"CName\": \"INTRODUCTION TO COMPUTER SCIENCE\"}, {\"_id\": 0, \"DNO\": 1, \"Room\": 1})",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-store_1-48",
+      "database": "store_1",
+      "complexity": "medium",
+      "adapter_output": "db.tracks.aggregate([{\"$lookup\": {\"from\": \"media_types\", \"localField\": \"media_type_id\", \"foreignField\": \"id\", \"as\": \"media_type\"}}, {\"$unwind\": \"$media_type\"}, {\"$lookup\": {\"from\": \"genres\", \"localField\": \"genre_id\", \"foreignField\": \"id\", \"as\": \"genre\"}}, {\"$unwind\": \"$genre\"}, {\"$match\": {\"$or\": [{\"$expr\": {\"$eq\": [\"$media_type.name\", \"MPEG audio file\"]}}, {\"$eq\": [\"$genre.name\", \"Rock\"]}]}}, {\"$project\": {\"_id\": 0, \"name\": 1}}])",
+      "fused_output": "db.tracks.aggregate([{\"$lookup\": {\"from\": \"media_types\", \"localField\": \"media_type_id\", \"foreignField\": \"id\", \"as\": \"media_type\"}}, {\"$unwind\": \"$media_type\"}, {\"$match\": {\"$or\": [{\"media_type.name\": \"MPEG audio file\"}, {\"genre.name\": \"Rock\"}]}}, {\"$project\": {\"_id\": 0, \"name\": 1}}])",
+      "text_match": false,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "cs-e2",
+      "database": "concert_singer",
+      "complexity": "easy",
+      "adapter_output": "db.stadium.count_documents({})",
+      "fused_output": "db.stadium.count_documents({})",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-bike_1-59",
+      "database": "bike_1",
+      "complexity": null,
+      "adapter_output": "db.trip.find({\"id\": {\"$in\": [1, 2, 3]}}, {\"_id\": 0, \"start_station_name\": 1, \"end_station_name\": 1}).sort({\"id\": 1})",
+      "fused_output": "db.trip.find({\"id\": {\"$in\": [1, 2, 3]}}, {\"_id\": 0, \"start_station_name\": 1, \"end_station_name\": 1}).sort({\"id\": 1})",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-car_1-37",
+      "database": "car_1",
+      "complexity": "easy",
+      "adapter_output": "db.car_names.aggregate([{\"$lookup\": {\"from\": \"car_makers\", \"localField\": \"Make\", \"foreignField\": \"FullName\", \"as\": \"maker\"}}, {\"$unwind\": \"$maker\"}, {\"$project\": {\"_id\": 0, \"Make\": \"$maker.FullName\", \"Model\": \"$Model\"}}])",
+      "fused_output": "db.car_names.aggregate([{\"$lookup\": {\"from\": \"car_makers\", \"localField\": \"Make\", \"foreignField\": \"FullName\", \"as\": \"maker\"}}, {\"$unwind\": \"$maker\"}, {\"$project\": {\"_id\": 0, \"Make\": \"$maker.FullName\", \"Model\": \"$Model\"}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-wine_1-10",
+      "database": "wine_1",
+      "complexity": "medium",
+      "adapter_output": "db.appelations.aggregate([{\"$match\": {\"County\": \"Sonoma\"}}, {\"$lookup\": {\"from\": \"wine\", \"localField\": \"Appelation\", \"foreignField\": \"Appelation\", \"as\": \"w\"}}, {\"$unwind\": \"$w\"}, {\"$group\": {\"_id\": None, \"avg_price\": {\"$avg\": \"$w.Price\"}}}, {\"$project\": {\"_id\": 0, \"avg_price\": 1}}])",
+      "fused_output": "db.appelations.aggregate([{\"$match\": {\"County\": \"Sonoma\"}}, {\"$lookup\": {\"from\": \"wine\", \"localField\": \"Appelation\", \"foreignField\": \"Appelation\", \"as\": \"w\"}}, {\"$unwind\": \"$w\"}, {\"$group\": {\"_id\": None, \"avg_price\": {\"$avg\": \"$w.Price\"}}}, {\"$project\": {\"_id\": 0, \"avg_price\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-wine_1-2",
+      "database": "wine_1",
+      "complexity": "hard",
+      "adapter_output": "db.wine.aggregate([{\"$group\": {\"_id\": \"$Grape\", \"avg_price\": {\"$avg\": \"$Price\"}}}, {\"$sort\": {\"avg_price\": -1}}, {\"$limit\": 1}, {\"$lookup\": {\"from\": \"grapes\", \"localField\": \"_id\", \"foreignField\": \"Grape\", \"as\": \"gr\"}}, {\"$unwind\": \"$gr\"}, {\"$project\": {\"_id\": 0, \"Color\": \"$gr.Color\"}}])",
+      "fused_output": "db.wine.aggregate([{\"$group\": {\"_id\": \"$Grape\", \"avg_price\": {\"$avg\": \"$Price\"}}}, {\"$sort\": {\"avg_price\": -1}}, {\"$limit\": 1}, {\"$lookup\": {\"from\": \"grapes\", \"localField\": \"_id\", \"foreignField\": \"Grape\", \"as\": \"grape\"}}, {\"$unwind\": \"$grape\"}, {\"$project\": {\"_id\": 0, \"Color\": \"$grape.Color\"}}])",
+      "text_match": false,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    },
+    {
+      "id": "spider-hr_1-102",
+      "database": "hr_1",
+      "complexity": null,
+      "adapter_output": "db.employees.aggregate([{\"$lookup\": {\"from\": \"employees\", \"localField\": \"MANAGER_ID\", \"foreignField\": \"EMPLOYEE_ID\", \"as\": \"m\"}}, {\"$unwind\": \"$m\"}, {\"$match\": {\"$expr\": {\"$and\": [{\"$eq\": [\"$m.FIRST_NAME\", \"Clara\"]}, {\"$ne\": [\"$m.FIRST_NAME\", \"Clara\"]}, {\"$eq\": [\"$m.LAST_NAME\", \"Clara\"]}, {\"$ne\": [\"$m.LAST_NAME\", \"Clara\"]}, {\"$eq\": [\"$m.HIRE_DATE\", \"Clara\"]}, {\"$ne\": [\"$m.HIRE_DATE\", \"Clara\"]}]}}, {\"$project\": {\"_id\": 0, \"FIRST_NAME\": 1, \"LAST_NAME\": 1, \"HIRE_DATE\": 1}}])",
+      "fused_output": "db.employees.aggregate([{\"$lookup\": {\"from\": \"employees\", \"localField\": \"MANAGER_ID\", \"foreignField\": \"EMPLOYEE_ID\", \"as\": \"m\"}}, {\"$unwind\": \"$m\"}, {\"$match\": {\"$expr\": {\"$and\": [{\"$eq\": [\"$m.FIRST_NAME\", \"Clara\"]}, {\"$ne\": [\"$m.FIRST_NAME\", \"Clara\"]}, {\"$eq\": [\"$m.DEPARTMENT_ID\", \"$.DEPARTMENT_ID\"]}]}}, {\"$project\": {\"_id\": 0, \"FIRST_NAME\": 1, \"LAST_NAME\": 1, \"HIRE_DATE\": 1}}])",
+      "text_match": false,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-car_1-81",
+      "database": "car_1",
+      "complexity": "easy",
+      "adapter_output": "db.cars_data.aggregate([{\"$match\": {\"Cylinders\": {\"$gte\": 8}, \"Year\": {\"$lt\": 1980}}}, {\"$group\": {\"_id\": None, \"max_mpg\": {\"$max\": \"$MPG\"}}}, {\"$project\": {\"_id\": 0, \"max_mpg\": 1}}])",
+      "fused_output": "db.cars_data.aggregate([{\"$match\": {\"Cylinders\": {\"$gte\": 8}, \"Year\": {\"$lt\": 1980}}}, {\"$group\": {\"_id\": None, \"max_mpg\": {\"$max\": \"$MPG\"}}}, {\"$project\": {\"_id\": 0, \"max_mpg\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-apartment_rentals-23",
+      "database": "apartment_rentals",
+      "complexity": "easy",
+      "adapter_output": "db.Apartment_Facilities.aggregate([{\"$group\": {\"_id\": \"$apt_id\", \"apt_number\": {\"$first\": \"$apt_number\"}, \"room_count\": {\"$sum\": 1}}}, {\"$project\": {\"_id\": 0, \"apt_number\": 1, \"room_count\": 1}}])",
+      "fused_output": "db.Apartment_Facilities.aggregate([{\"$group\": {\"_id\": \"$apt_id\", \"apt_number\": {\"$first\": \"$apt_number\"}, \"room_count\": {\"$sum\": 1}}}, {\"$project\": {\"_id\": 0, \"apt_number\": 1, \"room_count\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": false,
+      "fused_execution_accuracy": false
+    },
+    {
+      "id": "spider-store_1-105",
+      "database": "store_1",
+      "complexity": null,
+      "adapter_output": "db.tracks.aggregate([{\"$lookup\": {\"from\": \"genres\", \"localField\": \"genre_id\", \"foreignField\": \"id\", \"as\": \"g\"}}, {\"$unwind\": \"$g\"}, {\"$match\": {\"g.name\": {\"$in\": [\"Rock\", \"Jazz\"]}}}, {\"$project\": {\"_id\": 0, \"name\": 1}}])",
+      "fused_output": "db.tracks.aggregate([{\"$lookup\": {\"from\": \"genres\", \"localField\": \"genre_id\", \"foreignField\": \"id\", \"as\": \"g\"}}, {\"$unwind\": \"$g\"}, {\"$match\": {\"g.name\": {\"$in\": [\"Rock\", \"Jazz\"]}}}, {\"$project\": {\"_id\": 0, \"name\": 1}}])",
+      "text_match": true,
+      "adapter_execution_accuracy": true,
+      "fused_execution_accuracy": true
+    }
+  ]
+}
