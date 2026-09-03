@@ -58,7 +58,11 @@ class ArmConfig:
     model_id: str  # the string sent as `model` in the chat-completions request
     api_key: str | None = None
     launch_command: list[str] | None = None  # None => already running (Ollama, hosted API)
-    health_check_path: str = "/v1/models"
+    # Relative to base_url, which already ends in /v1 (see mlx_lm_arm/ollama_arm/
+    # vllm_metal_arm below) — "/models", not "/v1/models", or server_lifecycle.py's
+    # health check hits .../v1/v1/models and 404s. Caught live against a real
+    # mlx_lm.server before this default shipped anywhere it could bite silently.
+    health_check_path: str = "/models"
     extra_request_params: dict = field(default_factory=dict)
 
 

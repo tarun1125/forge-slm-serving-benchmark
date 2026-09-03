@@ -15,6 +15,20 @@ here (AsyncOpenAI reuses an httpx connection pool across calls, and
 max_retries below hands off to its built-in exponential backoff) rather than
 reimplemented — per AGENTS.md, this is exactly the kind of provider-adapter
 plumbing that doesn't need a bespoke implementation.
+
+Every request sets `stop=STOP_SEQUENCES` — not optional, not arm-specific.
+This model's chat turns end with `<|im_end|>`, but Qwen2.5's config.json
+eos_token_id points at `<|endoftext|>` instead; mlx_lm's TokenizerWrapper
+only checks that single configured id (a known upstream gap — the capstone
+repo's own spot_check.py works around it the same way, citing mlx-lm issue
+#973), so without an explicit stop sequence the model correctly emits
+`<|im_end|>` and generation just keeps going past it. Confirmed live against
+a real mlx_lm.server: the identical request produced ~100 tokens of
+`!<|im_end|>!<|im_end|>...` garbage without this, and the correct
+`db.singer.count_documents({})` with it. `stop` is a standard
+chat-completions field every arm here understands, so this one line fixes
+mlx_lm, Ollama, vLLM, and any hosted API uniformly — no per-arm special
+casing needed.
 """
 
 from __future__ import annotations
@@ -32,6 +46,9 @@ log = get_logger(__name__)
 
 DEFAULT_MAX_RETRIES = 2
 DEFAULT_TIMEOUT_S = 120.0
+# Matches fine_tuning/spot_check.py's STOP_MARKERS in the capstone repo exactly —
+# same model, same known mlx-lm EOS gap, same fix. See module docstring.
+STOP_SEQUENCES = ["<|im_end|>", "<|endoftext|>"]
 
 
 def make_client(arm_config: ArmConfig, max_retries: int = DEFAULT_MAX_RETRIES) -> AsyncOpenAI:
@@ -76,6 +93,7 @@ async def run_request(
             temperature=0,
             stream=True,
             stream_options={"include_usage": True},
+            stop=STOP_SEQUENCES,
         )
         async for chunk in stream:
             now = time.monotonic()
