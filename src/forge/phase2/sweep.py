@@ -185,6 +185,22 @@ async def run_sweep(
                             n_repeats=n_repeats,
                             n_warmup=n_warmup,
                         )
+                        # Stamped once per cell, not per request: thermal state
+                        # doesn't meaningfully change within the seconds-to-tens-
+                        # of-seconds one cell takes, and this is exactly the point
+                        # wait_for_cooldown() already checked state at.
+                        if thermal_monitor is not None:
+                            reading = thermal_monitor.current()
+                            results = [
+                                r.model_copy(
+                                    update={
+                                        "thermal_pressure_level": reading.pressure_level,
+                                        "cpu_power_mw": reading.cpu_power_mw,
+                                        "gpu_power_mw": reading.gpu_power_mw,
+                                    }
+                                )
+                                for r in results
+                            ]
                         metrics = aggregate(results)
 
                         with mlflow_tracking.sweep_cell_run(
