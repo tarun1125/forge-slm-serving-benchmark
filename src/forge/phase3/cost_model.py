@@ -160,19 +160,31 @@ def find_break_even_volume(
     assumptions: CostAssumptions,
     throughput_tokens_per_sec: float,
     avg_completion_tokens: float,
-    avg_prompt_tokens: float,
+    hosted_cost_per_query_inr: float,
     volume_grid: list[int],
 ) -> int | None:
     """Returns the smallest monthly_query_volume in volume_grid at which
-    local_cost_per_query <= hosted_api_cost_per_query — the break-even
+    local_cost_per_query <= hosted_cost_per_query_inr — the break-even
     point. None if local never catches up within the given grid (raise the
-    upper bound rather than assume it always exists)."""
-    hosted_cost = hosted_api_cost_per_query(assumptions, avg_prompt_tokens, avg_completion_tokens)
+    upper bound rather than assume it always exists).
+
+    Takes a PRE-COMPUTED hosted_cost_per_query_inr rather than prompt/
+    completion token counts to recompute it from — an earlier version took
+    avg_prompt_tokens too and called hosted_api_cost_per_query() internally,
+    which silently used the LOCAL model's own token counts to price the
+    HOSTED side. Caught by hand-checking a break-even result against a
+    direct calculation: the two disagreed (this function said the crossover
+    was at 1,000,000/month for vllm_metal 4-bit; recomputing hosted cost
+    correctly using Groq's own real measured tokens — 1469 prompt / 356
+    completion, very different from the local model's 1408/75 — moved it to
+    300,000). The caller now computes the hosted baseline once, correctly,
+    and passes the single number in — impossible to accidentally cross the
+    streams between two different workloads' token counts this way."""
     for volume in sorted(volume_grid):
         local = local_cost_per_query(
             assumptions, throughput_tokens_per_sec, avg_completion_tokens, volume
         )
-        if local.total_cost_inr <= hosted_cost:
+        if local.total_cost_inr <= hosted_cost_per_query_inr:
             return volume
     return None
 

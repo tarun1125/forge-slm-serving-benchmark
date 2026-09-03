@@ -119,11 +119,14 @@ class TestFindBreakEvenVolume:
     def test_finds_a_crossover_when_one_exists(self):
         a = _assumptions()
         grid = [100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000]
+        hosted_cost = hosted_api_cost_per_query(
+            a, avg_prompt_tokens=1200, avg_completion_tokens=150
+        )
         result = find_break_even_volume(
             a,
             throughput_tokens_per_sec=500,
             avg_completion_tokens=150,
-            avg_prompt_tokens=1200,
+            hosted_cost_per_query_inr=hosted_cost,
             volume_grid=grid,
         )
         assert result is not None
@@ -132,14 +135,47 @@ class TestFindBreakEvenVolume:
     def test_returns_none_when_local_never_catches_up_in_grid(self):
         # Absurdly expensive hardware relative to a tiny grid ensures no crossover.
         a = _assumptions(mac_hardware_cost_inr=10_000_000_000.0)
+        hosted_cost = hosted_api_cost_per_query(
+            a, avg_prompt_tokens=1200, avg_completion_tokens=150
+        )
         result = find_break_even_volume(
             a,
             throughput_tokens_per_sec=500,
             avg_completion_tokens=150,
-            avg_prompt_tokens=1200,
+            hosted_cost_per_query_inr=hosted_cost,
             volume_grid=[100, 1000],
         )
         assert result is None
+
+    def test_uses_the_hosted_cost_passed_in_not_local_tokens(self):
+        # Regression test for a real bug: an earlier version took
+        # avg_prompt_tokens and recomputed hosted cost internally using the
+        # LOCAL model's own token counts, silently pricing the hosted arm
+        # as if it generated as few tokens as the local model does. A
+        # cheap, wrong hosted-cost floor lets local "catch up" too early.
+        a = _assumptions()
+        grid = [100, 1_000, 10_000, 100_000, 1_000_000]
+        cheap_hosted_cost = 0.001  # far below what real Groq pricing would give for this workload
+        expensive_hosted_cost = 100.0  # far above
+
+        result_cheap_hosted = find_break_even_volume(
+            a,
+            throughput_tokens_per_sec=500,
+            avg_completion_tokens=150,
+            hosted_cost_per_query_inr=cheap_hosted_cost,
+            volume_grid=grid,
+        )
+        result_expensive_hosted = find_break_even_volume(
+            a,
+            throughput_tokens_per_sec=500,
+            avg_completion_tokens=150,
+            hosted_cost_per_query_inr=expensive_hosted_cost,
+            volume_grid=grid,
+        )
+        # A cheaper hosted baseline should require MORE local volume (or
+        # never crossing) to break even, not less.
+        assert result_expensive_hosted is not None
+        assert result_cheap_hosted is None or result_cheap_hosted > result_expensive_hosted
 
 
 class TestCostPerAccuracyPoint:
