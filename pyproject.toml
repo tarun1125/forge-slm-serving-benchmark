@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "forge-slm-serving-benchmark"
 version = "0.1.0"
@@ -40,8 +44,8 @@ dev = [
     "pip-audit>=2.7.0",
 ]
 
-[tool.uv]
-package = false
+[tool.hatch.build.targets.wheel]
+packages = ["src/forge"]
 
 [tool.ruff]
 line-length = 100
