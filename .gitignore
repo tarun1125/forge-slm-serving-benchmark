@@ -3,6 +3,8 @@
 __pycache__/
 *.pyc
 mlruns/
+mlflow.db
+mlflow.db-*
 
 # Model artifacts are large and hash-verifiable from MANIFEST.json — do not commit weights
 models/*/

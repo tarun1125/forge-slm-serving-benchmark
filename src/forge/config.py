@@ -15,7 +15,13 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     log_level: str = "INFO"
-    mlflow_tracking_uri: str = "./mlruns"
+    # sqlite, not the plain "./mlruns" folder store the master plan/handoff
+    # guide originally specified: mlflow 3.15.2 has put the filesystem
+    # backend into maintenance mode and hard-errors on it unless
+    # MLFLOW_ALLOW_FILE_STORE=true is set — confirmed live, not assumed.
+    # sqlite is what mlflow's own error message recommends instead, and it's
+    # still just one local file, so nothing about "no server needed" is lost.
+    mlflow_tracking_uri: str = "sqlite:///mlflow.db"
 
     groq_api_key: str | None = None
     nim_api_key: str | None = None
