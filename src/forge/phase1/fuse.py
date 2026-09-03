@@ -27,6 +27,27 @@ from forge.logging_config import configure_logging, get_logger, hash_for_log, st
 log = get_logger(__name__)
 
 
+def ensure_full_snapshot(base_model: str) -> None:
+    """Work around a real gap in mlx_lm: load()/get_model_path() downloads
+    only an inference-relevant file subset (allow_patterns in
+    mlx_lm/utils.py excludes .gitattributes, README.md, etc.), but
+    mlx_lm.fuse's save() step later calls hf_repo_to_path(), which does
+    snapshot_download(..., local_files_only=True) with NO pattern
+    restriction — demanding the *complete* repo be cached already. Against
+    a partial cache this raises IncompleteSnapshotError with outgoing
+    traffic disabled, even though the process has a working network
+    connection; it just never gets to use it for this specific call.
+    Pre-fetching the unrestricted snapshot here closes that gap before
+    mlx_lm's own code hits it. No-op for a local model path."""
+    if Path(base_model).exists():
+        return
+
+    from huggingface_hub import snapshot_download
+
+    log.info("fuse.ensure_full_snapshot", base_model=base_model)
+    snapshot_download(base_model)
+
+
 def fuse(base_model: str, adapter_path: Path, save_path: Path) -> Path:
     save_path.mkdir(parents=True, exist_ok=True)
     log.info(
@@ -36,6 +57,8 @@ def fuse(base_model: str, adapter_path: Path, save_path: Path) -> Path:
         save_path=str(save_path),
     )
     start = time.monotonic()
+
+    ensure_full_snapshot(base_model)
 
     # mlx_lm.fuse.main() reads sys.argv directly (it's a CLI entrypoint, not a
     # library function) — patch argv for the duration of the call rather than
