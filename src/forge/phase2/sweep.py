@@ -29,7 +29,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -301,8 +300,7 @@ def main() -> None:
     tokenizer = load_tokenizer(str(args.fused_model_path))
     prompt_buckets = build_prompt_buckets(harness, tokenizer, n_per_bucket=args.n_per_bucket)
 
-    run_id = str(uuid.uuid4())
-    start_run(log, phase="phase2.sweep", run_id=run_id)
+    run_id = start_run(log, phase="phase2.sweep")
 
     thermal_monitor = None if args.skip_thermal else ThermalMonitor()
     if thermal_monitor is not None:
