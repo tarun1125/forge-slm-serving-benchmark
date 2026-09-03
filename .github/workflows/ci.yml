@@ -70,4 +70,17 @@ jobs:
         # reachable in this codebase's own usage.
         #
         # Drop whichever ignore no longer applies the moment its fix ships.
-        run: uv run pip-audit --strict --ignore-vuln CVE-2026-71211 --ignore-vuln PYSEC-2026-3552
+        #
+        # Audits an exported requirements list, not the live environment
+        # (`pip-audit -l`) directly: this project installs itself into its
+        # own venv (needed so `python -m forge.*` works — see the fuse.py
+        # fix history), and `pip-audit -l` then tries to look up
+        # "forge-slm-serving-benchmark" on PyPI and hard-errors because an
+        # unpublished local package obviously isn't there.
+        # `--skip-editable` looks like the fix but itself errors
+        # ("distribution marked as editable") rather than skipping, on the
+        # pip-audit version pinned here — `uv export --no-emit-project` is
+        # the reliable way to exclude our own package from the audit.
+        run: |
+          uv export --format requirements-txt --group dev --no-emit-project --no-hashes -o /tmp/requirements-audit.txt
+          uv run pip-audit -r /tmp/requirements-audit.txt --strict --ignore-vuln CVE-2026-71211 --ignore-vuln PYSEC-2026-3552

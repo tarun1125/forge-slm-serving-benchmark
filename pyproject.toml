@@ -28,7 +28,16 @@ dependencies = [
     "anthropic>=1.3.0",
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
-    "openai>=1.0.0",
+    # Capped below 2.0: >=3.x resolves an experimental httpx2/httpcore2
+    # transport that throws a spurious `RuntimeError: generator didn't stop
+    # after athrow()` on every streamed request's cleanup, from inside
+    # httpcore2 itself — reproduced directly against forge.phase2.client on
+    # this machine. Does not affect correctness (the result is already
+    # returned before the traceback fires) but it's noise a benchmark
+    # runner making thousands of streamed calls shouldn't spew. 1.109.1 uses
+    # the long-stable plain httpx transport and shows no such error.
+    "openai>=1.0.0,<2",
+
     "pymongo>=4.9.0",
     "numpy>=2.0.0",
     "psutil>=6.0.0",
