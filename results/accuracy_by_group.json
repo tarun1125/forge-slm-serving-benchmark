@@ -1,0 +1,330 @@
+{
+  "mlx_lm/4bit/long": {
+    "arm": "mlx_lm",
+    "model_variant": "4bit",
+    "prompt_bucket": "long",
+    "n_unique_generations": 13,
+    "n_scoreable": 13,
+    "n_correct": 3,
+    "execution_accuracy": 0.23076923076923078,
+    "nondeterministic_case_ids": [
+      "spider-world_1-23",
+      "spider-college_1-154",
+      "cs-m7"
+    ]
+  },
+  "mlx_lm/4bit/medium": {
+    "arm": "mlx_lm",
+    "model_variant": "4bit",
+    "prompt_bucket": "medium",
+    "n_unique_generations": 12,
+    "n_scoreable": 12,
+    "n_correct": 4,
+    "execution_accuracy": 0.3333333333333333,
+    "nondeterministic_case_ids": [
+      "spider-college_2-141",
+      "spider-store_1-26"
+    ]
+  },
+  "mlx_lm/4bit/short": {
+    "arm": "mlx_lm",
+    "model_variant": "4bit",
+    "prompt_bucket": "short",
+    "n_unique_generations": 13,
+    "n_scoreable": 13,
+    "n_correct": 0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": [
+      "spider-store_1-69",
+      "spider-college_1-154"
+    ]
+  },
+  "mlx_lm/8bit/long": {
+    "arm": "mlx_lm",
+    "model_variant": "8bit",
+    "prompt_bucket": "long",
+    "n_unique_generations": 11,
+    "n_scoreable": 11,
+    "n_correct": 2,
+    "execution_accuracy": 0.18181818181818182,
+    "nondeterministic_case_ids": [
+      "spider-store_1-26"
+    ]
+  },
+  "mlx_lm/8bit/medium": {
+    "arm": "mlx_lm",
+    "model_variant": "8bit",
+    "prompt_bucket": "medium",
+    "n_unique_generations": 12,
+    "n_scoreable": 12,
+    "n_correct": 3,
+    "execution_accuracy": 0.25,
+    "nondeterministic_case_ids": [
+      "spider-college_2-141",
+      "spider-college_1-103"
+    ]
+  },
+  "mlx_lm/8bit/short": {
+    "arm": "mlx_lm",
+    "model_variant": "8bit",
+    "prompt_bucket": "short",
+    "n_unique_generations": 12,
+    "n_scoreable": 12,
+    "n_correct": 0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": [
+      "spider-wine_1-30",
+      "spider-hr_1-8"
+    ]
+  },
+  "mlx_lm/bf16/long": {
+    "arm": "mlx_lm",
+    "model_variant": "bf16",
+    "prompt_bucket": "long",
+    "n_unique_generations": 12,
+    "n_scoreable": 12,
+    "n_correct": 3,
+    "execution_accuracy": 0.25,
+    "nondeterministic_case_ids": [
+      "spider-pets_1-14",
+      "spider-college_1-103"
+    ]
+  },
+  "mlx_lm/bf16/medium": {
+    "arm": "mlx_lm",
+    "model_variant": "bf16",
+    "prompt_bucket": "medium",
+    "n_unique_generations": 11,
+    "n_scoreable": 11,
+    "n_correct": 4,
+    "execution_accuracy": 0.36363636363636365,
+    "nondeterministic_case_ids": [
+      "spider-college_1-103"
+    ]
+  },
+  "mlx_lm/bf16/short": {
+    "arm": "mlx_lm",
+    "model_variant": "bf16",
+    "prompt_bucket": "short",
+    "n_unique_generations": 10,
+    "n_scoreable": 10,
+    "n_correct": 0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": []
+  },
+  "ollama/f16/long": {
+    "arm": "ollama",
+    "model_variant": "f16",
+    "prompt_bucket": "long",
+    "n_unique_generations": 10,
+    "n_scoreable": 10,
+    "n_correct": 2,
+    "execution_accuracy": 0.2,
+    "nondeterministic_case_ids": []
+  },
+  "ollama/f16/medium": {
+    "arm": "ollama",
+    "model_variant": "f16",
+    "prompt_bucket": "medium",
+    "n_unique_generations": 10,
+    "n_scoreable": 10,
+    "n_correct": 4,
+    "execution_accuracy": 0.4,
+    "nondeterministic_case_ids": []
+  },
+  "ollama/f16/short": {
+    "arm": "ollama",
+    "model_variant": "f16",
+    "prompt_bucket": "short",
+    "n_unique_generations": 10,
+    "n_scoreable": 10,
+    "n_correct": 0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": []
+  },
+  "ollama/q4/long": {
+    "arm": "ollama",
+    "model_variant": "q4",
+    "prompt_bucket": "long",
+    "n_unique_generations": 10,
+    "n_scoreable": 10,
+    "n_correct": 3,
+    "execution_accuracy": 0.3,
+    "nondeterministic_case_ids": []
+  },
+  "ollama/q4/medium": {
+    "arm": "ollama",
+    "model_variant": "q4",
+    "prompt_bucket": "medium",
+    "n_unique_generations": 10,
+    "n_scoreable": 10,
+    "n_correct": 5,
+    "execution_accuracy": 0.5,
+    "nondeterministic_case_ids": []
+  },
+  "ollama/q4/short": {
+    "arm": "ollama",
+    "model_variant": "q4",
+    "prompt_bucket": "short",
+    "n_unique_generations": 10,
+    "n_scoreable": 10,
+    "n_correct": 0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": []
+  },
+  "ollama/q8/long": {
+    "arm": "ollama",
+    "model_variant": "q8",
+    "prompt_bucket": "long",
+    "n_unique_generations": 10,
+    "n_scoreable": 10,
+    "n_correct": 2,
+    "execution_accuracy": 0.2,
+    "nondeterministic_case_ids": []
+  },
+  "ollama/q8/medium": {
+    "arm": "ollama",
+    "model_variant": "q8",
+    "prompt_bucket": "medium",
+    "n_unique_generations": 10,
+    "n_scoreable": 10,
+    "n_correct": 4,
+    "execution_accuracy": 0.4,
+    "nondeterministic_case_ids": []
+  },
+  "ollama/q8/short": {
+    "arm": "ollama",
+    "model_variant": "q8",
+    "prompt_bucket": "short",
+    "n_unique_generations": 10,
+    "n_scoreable": 10,
+    "n_correct": 0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": []
+  },
+  "vllm_metal/4bit/long": {
+    "arm": "vllm_metal",
+    "model_variant": "4bit",
+    "prompt_bucket": "long",
+    "n_unique_generations": 19,
+    "n_scoreable": 19,
+    "n_correct": 3,
+    "execution_accuracy": 0.15789473684210525,
+    "nondeterministic_case_ids": [
+      "spider-wine_1-30",
+      "spider-store_1-26",
+      "spider-college_1-154",
+      "spider-pets_1-14",
+      "cs-m7",
+      "spider-world_1-23"
+    ]
+  },
+  "vllm_metal/4bit/medium": {
+    "arm": "vllm_metal",
+    "model_variant": "4bit",
+    "prompt_bucket": "medium",
+    "n_unique_generations": 14,
+    "n_scoreable": 14,
+    "n_correct": 5,
+    "execution_accuracy": 0.35714285714285715,
+    "nondeterministic_case_ids": [
+      "spider-college_2-141",
+      "spider-wine_1-30"
+    ]
+  },
+  "vllm_metal/4bit/short": {
+    "arm": "vllm_metal",
+    "model_variant": "4bit",
+    "prompt_bucket": "short",
+    "n_unique_generations": 16,
+    "n_scoreable": 16,
+    "n_correct": 0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": [
+      "spider-store_1-69",
+      "spider-college_1-154",
+      "spider-store_1-26",
+      "spider-hr_1-8"
+    ]
+  },
+  "vllm_metal/8bit/long": {
+    "arm": "vllm_metal",
+    "model_variant": "8bit",
+    "prompt_bucket": "long",
+    "n_unique_generations": 12,
+    "n_scoreable": 12,
+    "n_correct": 3,
+    "execution_accuracy": 0.25,
+    "nondeterministic_case_ids": [
+      "spider-college_2-141",
+      "spider-college_1-154"
+    ]
+  },
+  "vllm_metal/8bit/medium": {
+    "arm": "vllm_metal",
+    "model_variant": "8bit",
+    "prompt_bucket": "medium",
+    "n_unique_generations": 13,
+    "n_scoreable": 13,
+    "n_correct": 4,
+    "execution_accuracy": 0.3076923076923077,
+    "nondeterministic_case_ids": [
+      "spider-college_1-154",
+      "cs-m7",
+      "spider-college_1-103"
+    ]
+  },
+  "vllm_metal/8bit/short": {
+    "arm": "vllm_metal",
+    "model_variant": "8bit",
+    "prompt_bucket": "short",
+    "n_unique_generations": 15,
+    "n_scoreable": 15,
+    "n_correct": 0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": [
+      "spider-store_1-69",
+      "spider-wine_1-30",
+      "spider-world_1-85"
+    ]
+  },
+  "vllm_metal/bf16/long": {
+    "arm": "vllm_metal",
+    "model_variant": "bf16",
+    "prompt_bucket": "long",
+    "n_unique_generations": 13,
+    "n_scoreable": 13,
+    "n_correct": 2,
+    "execution_accuracy": 0.15384615384615385,
+    "nondeterministic_case_ids": [
+      "spider-store_1-26",
+      "cs-m7"
+    ]
+  },
+  "vllm_metal/bf16/medium": {
+    "arm": "vllm_metal",
+    "model_variant": "bf16",
+    "prompt_bucket": "medium",
+    "n_unique_generations": 11,
+    "n_scoreable": 11,
+    "n_correct": 4,
+    "execution_accuracy": 0.36363636363636365,
+    "nondeterministic_case_ids": [
+      "cs-m7"
+    ]
+  },
+  "vllm_metal/bf16/short": {
+    "arm": "vllm_metal",
+    "model_variant": "bf16",
+    "prompt_bucket": "short",
+    "n_unique_generations": 13,
+    "n_scoreable": 13,
+    "n_correct": 0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": [
+      "spider-store_1-26",
+      "spider-world_1-85",
+      "spider-store_1-69"
+    ]
+  }
+}
