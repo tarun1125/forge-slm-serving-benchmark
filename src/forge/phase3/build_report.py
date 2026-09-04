@@ -35,6 +35,10 @@ ACCURACY_PATH = Path("results/accuracy_by_group.json")
 GROQ_SAMPLE_PATH = Path("results/groq_sample.jsonl")
 OUTPUT_DOC = Path("docs/cost-model.md")
 OUTPUT_CHART = Path("docs/break-even-curve.png")
+# Small (9-row) and committed, unlike results/sweep/ — Phase 5's notebook reads this
+# directly instead of recomputing the cost model, so it doesn't need to reimplement
+# this file's logic or depend on results/sweep/ (gitignored) being present.
+OUTPUT_RESULTS_TABLE = Path("results/cost_model_results.json")
 
 LOCAL_VARIANTS = {
     "mlx_lm": ["bf16", "8bit", "4bit"],
@@ -322,14 +326,21 @@ def main() -> None:
     OUTPUT_DOC.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_DOC.write_text(doc, encoding="utf-8")
 
+    OUTPUT_RESULTS_TABLE.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_RESULTS_TABLE.write_text(
+        json.dumps({"local_variants": results, "hosted_api": groq_row}, indent=2),
+        encoding="utf-8",
+    )
+
     log.info(
         "run.finish",
         run_id=run_id,
         phase="phase3.build_report",
         output_doc=str(OUTPUT_DOC),
         output_chart=str(OUTPUT_CHART),
+        output_results_table=str(OUTPUT_RESULTS_TABLE),
     )
-    print(f"Wrote {OUTPUT_DOC} and {OUTPUT_CHART}")
+    print(f"Wrote {OUTPUT_DOC}, {OUTPUT_CHART}, and {OUTPUT_RESULTS_TABLE}")
 
 
 if __name__ == "__main__":

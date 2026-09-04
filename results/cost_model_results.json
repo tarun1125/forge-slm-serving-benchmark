@@ -1,0 +1,108 @@
+{
+  "local_variants": [
+    {
+      "arm": "mlx_lm",
+      "variant": "bf16",
+      "throughput_tokens_per_sec": 69.83268511683553,
+      "avg_prompt_tokens": 1407.9166666666667,
+      "avg_completion_tokens": 70.54166666666667,
+      "execution_accuracy": 0.36363636363636365,
+      "cost_per_query_inr_at_10k_monthly": 0.6942824133158473,
+      "break_even_monthly_volume": 300000,
+      "cost_per_accuracy_point_inr": 1.90927663661858
+    },
+    {
+      "arm": "mlx_lm",
+      "variant": "8bit",
+      "throughput_tokens_per_sec": 110.60608760430382,
+      "avg_prompt_tokens": 1407.9166666666667,
+      "avg_completion_tokens": 71.625,
+      "execution_accuracy": 0.25,
+      "cost_per_query_inr_at_10k_monthly": 0.6942408672050617,
+      "break_even_monthly_volume": 300000,
+      "cost_per_accuracy_point_inr": 2.776963468820247
+    },
+    {
+      "arm": "mlx_lm",
+      "variant": "4bit",
+      "throughput_tokens_per_sec": 154.8522329023078,
+      "avg_prompt_tokens": 1407.9166666666667,
+      "avg_completion_tokens": 82.45833333333333,
+      "execution_accuracy": 0.3333333333333333,
+      "cost_per_query_inr_at_10k_monthly": 0.694227681935981,
+      "break_even_monthly_volume": 300000,
+      "cost_per_accuracy_point_inr": 2.082683045807943
+    },
+    {
+      "arm": "ollama",
+      "variant": "f16",
+      "throughput_tokens_per_sec": 76.77257322488674,
+      "avg_prompt_tokens": 1407.9166666666667,
+      "avg_completion_tokens": 70.54166666666667,
+      "execution_accuracy": 0.4,
+      "cost_per_query_inr_at_10k_monthly": 0.6942719503502275,
+      "break_even_monthly_volume": 300000,
+      "cost_per_accuracy_point_inr": 1.7356798758755687
+    },
+    {
+      "arm": "ollama",
+      "variant": "q8",
+      "throughput_tokens_per_sec": 113.41484574891912,
+      "avg_prompt_tokens": 1407.9166666666667,
+      "avg_completion_tokens": 66.875,
+      "execution_accuracy": 0.4,
+      "cost_per_query_inr_at_10k_monthly": 0.6942342306647136,
+      "break_even_monthly_volume": 300000,
+      "cost_per_accuracy_point_inr": 1.7355855766617838
+    },
+    {
+      "arm": "ollama",
+      "variant": "q4",
+      "throughput_tokens_per_sec": 151.68041148659145,
+      "avg_prompt_tokens": 1407.9166666666667,
+      "avg_completion_tokens": 50.833333333333336,
+      "execution_accuracy": 0.5,
+      "cost_per_query_inr_at_10k_monthly": 0.6942050674906142,
+      "break_even_monthly_volume": 300000,
+      "cost_per_accuracy_point_inr": 1.3884101349812283
+    },
+    {
+      "arm": "vllm_metal",
+      "variant": "bf16",
+      "throughput_tokens_per_sec": 148.8955335245985,
+      "avg_prompt_tokens": 1407.9166666666667,
+      "avg_completion_tokens": 70.54166666666667,
+      "execution_accuracy": 0.36363636363636365,
+      "cost_per_query_inr_at_10k_monthly": 0.6942209523736602,
+      "break_even_monthly_volume": 300000,
+      "cost_per_accuracy_point_inr": 1.9091076190275655
+    },
+    {
+      "arm": "vllm_metal",
+      "variant": "8bit",
+      "throughput_tokens_per_sec": 330.5607213742237,
+      "avg_prompt_tokens": 1407.9166666666667,
+      "avg_completion_tokens": 71.08333333333333,
+      "execution_accuracy": 0.3076923076923077,
+      "cost_per_query_inr_at_10k_monthly": 0.6941913065126953,
+      "break_even_monthly_volume": 300000,
+      "cost_per_accuracy_point_inr": 2.2561217461662597
+    },
+    {
+      "arm": "vllm_metal",
+      "variant": "4bit",
+      "throughput_tokens_per_sec": 459.78513945461515,
+      "avg_prompt_tokens": 1407.9166666666667,
+      "avg_completion_tokens": 75.33333333333333,
+      "execution_accuracy": 0.35714285714285715,
+      "cost_per_query_inr_at_10k_monthly": 0.6941854405323351,
+      "break_even_monthly_volume": 300000,
+      "cost_per_accuracy_point_inr": 1.9437192334905382
+    }
+  ],
+  "hosted_api": {
+    "avg_prompt_tokens": 1469.0,
+    "avg_completion_tokens": 356.26666666666665,
+    "execution_accuracy": 0.6666666666666666
+  }
+}
