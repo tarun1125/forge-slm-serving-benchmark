@@ -1,9 +1,11 @@
 """Hardware fingerprint, captured once per process and embedded in every
 result file (models/MANIFEST.json, benchmark result rows, MLflow run tags).
 
-FORGE's entire claim is hardware-conditional (see 01-FORGE-serving-benchmark.md:
-"the M5 makes that visible"). An unlabelled number is worthless — this module
-is the single place that fingerprint gets produced so every artifact agrees.
+FORGE's entire claim is hardware-conditional — a throughput or latency number
+means nothing without the chip it was measured on, since Apple Silicon
+generations differ enough in memory bandwidth and GPU core count to move the
+result on their own. An unlabelled number is worthless — this module is the
+single place that fingerprint gets produced so every artifact agrees.
 """
 
 from __future__ import annotations
@@ -105,8 +107,9 @@ def assert_native_arm64() -> None:
     if machine != "arm64":
         raise RuntimeError(
             f"Detected machine={machine!r}, expected 'arm64'. You are running under Rosetta — "
-            "vllm-metal will refuse this outright. Install native arm64 Python 3.12 "
-            "(see CLAUDE-CODE-HANDOFF.md Part 1.1) before continuing."
+            "vllm-metal will refuse this outright. Install a native arm64 Python 3.12 "
+            "(e.g. via `arch -arm64 brew install python@3.12`, not the Rosetta-translated "
+            "system Python) before continuing."
         )
 
 

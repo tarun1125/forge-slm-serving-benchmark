@@ -133,8 +133,8 @@ def vllm_metal_arm(
 def hosted_api_arm(provider: str, settings: Settings | None = None) -> ArmConfig:
     """provider: "groq" | "nim". Requires GROQ_API_KEY / NIM_API_KEY in
     Settings (from .env) — raises loudly if missing rather than silently
-    skipping the arm, per AGENTS.md's "no raw dicts / validate at the
-    boundary" spirit applied to config as much as request bodies. Reads
+    skipping the arm, applying this project's "no raw dicts / validate at
+    the boundary" convention to config as much as request bodies. Reads
     through forge.config.Settings, not os.environ directly — an earlier
     version read os.environ.get(...) here, which this module's own
     docstring already said not to do, and never actually saw the key at

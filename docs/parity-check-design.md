@@ -1,11 +1,11 @@
 # Parity check — design and threshold
 
-Phase 1 of `01-FORGE-serving-benchmark.md` assigns the parity-check pass/fail
-threshold to the project owner, not to Claude Code, because every assumption
-in it is arguable and it's the kind of thing an interviewer asks "why did you
-pick that number?" about. For this repo, that call was explicitly delegated
-back to Claude Code — this document is the record of that decision, so it can
-still be defended on its merits rather than treated as a black box.
+The project plan assigns the Phase 1 parity-check pass/fail threshold to the
+project owner, not to Claude Code, because every assumption in it is arguable
+and it's the kind of thing an interviewer asks "why did you pick that
+number?" about. For this repo, that call was explicitly delegated back to
+Claude Code — this document is the record of that decision, so it can still
+be defended on its merits rather than treated as a black box.
 
 ## What's being checked and why
 
@@ -108,17 +108,17 @@ The capstone's `atlas_env.connect()` auto-discovers
 `atlas-credentials.env` by walking up from its own file location. Importing
 that function directly (rather than re-implementing a Mongo connection in
 FORGE) means the Atlas secret has exactly one copy on disk — duplicating it
-into a second `.env` would violate AGENTS.md's "no secrets in the repo, ever"
-principle in spirit even while gitignored, by creating a second place a leak
-could happen from. `forge.capstone_bridge.CapstoneHarness.check_atlas_credentials()`
+into a second `.env` would violate this project's "no secrets in the repo,
+ever" principle in spirit even while gitignored, by creating a second place
+a leak could happen from. `forge.capstone_bridge.CapstoneHarness.check_atlas_credentials()`
 fails loudly with the exact file path if it's missing, rather than silently
 falling back to anything.
 
 ## A known gap in the plan this surfaced: GGUF export for Qwen2
 
-`01-FORGE-serving-benchmark.md` Phase 1 calls for a GGUF variant "so you're
-comparing the same weights, not Ollama's convenience download of a different
-checkpoint," and suggests `mlx_lm.fuse --export-gguf` for this. That flag only
+The project plan's Phase 1 calls for a GGUF variant "so you're comparing the
+same weights, not Ollama's convenience download of a different checkpoint,"
+and suggests `mlx_lm.fuse --export-gguf` for this. That flag only
 supports `model_type in {llama, mixtral, mistral}` (`mlx_lm/fuse.py`,
 `mlx_lm/gguf.py`) — Qwen2.5-Coder's `model_type` is `"qwen2"`, so calling it
 raises `ValueError`. `src/forge/phase1/gguf_export.py` routes around this via

@@ -1,6 +1,6 @@
 """Structured JSON logging, shared by every FORGE module.
 
-Convention (see AGENTS.md):
+Convention followed across this project:
   - structlog with JSON output; every module gets a bound logger via get_logger().
   - Every experiment run emits a run_id (UUID4) on its first log line, bound to
     every subsequent record for that run via start_run().

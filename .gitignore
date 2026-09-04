@@ -2,6 +2,16 @@
 .env
 __pycache__/
 *.pyc
+
+# Internal project-planning context (job-search strategy, cross-project
+# working conventions) — not for the public repo. Kept locally, never
+# committed. See git history before the 2026-09-04 cleanup commit if you
+# ever need to recover the pre-rewrite state (local reflog only — the
+# pushed history was rewritten to remove these).
+/00-MASTER-PLAN.md
+/01-FORGE-serving-benchmark.md
+/CLAUDE-CODE-HANDOFF.md
+/agents.md
 mlruns/
 mlflow.db
 mlflow.db-*

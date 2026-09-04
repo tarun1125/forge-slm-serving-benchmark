@@ -1,9 +1,8 @@
-"""Aggregation over a sweep's raw RequestResults into the metrics the plan's
-Phase 2 table demands. Per 01-FORGE-serving-benchmark.md: TTFT and
-inter-token latency are ALWAYS reported separately — never blended into one
-"latency" number. That separation is the headline finding this whole project
-is built to surface, so it is not a formatting nicety here: there is no
-function in this module that combines them into a single number.
+"""Aggregation over a sweep's raw RequestResults into Phase 2's metrics table.
+TTFT and inter-token latency are ALWAYS reported separately — never blended
+into one "latency" number. That separation is the headline finding this
+whole project is built to surface, so it is not a formatting nicety here:
+there is no function in this module that combines them into a single number.
 """
 
 from __future__ import annotations

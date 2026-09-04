@@ -1,5 +1,5 @@
 """Typed settings loaded from .env — the single source of truth for paths and
-keys. Per AGENTS.md: all external input (including config) is validated with
+keys. Convention: all external input (including config) is validated with
 Pydantic at the boundary; nothing downstream should read os.environ directly.
 """
 

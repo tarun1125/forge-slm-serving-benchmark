@@ -13,9 +13,11 @@ number. See `docs/` for the full write-up once Phase 5 lands.
 
 ## Status
 
-Phase 0 (environment) — done. Phase 1 (model preparation) — scaffolded, not yet run.
-See `01-FORGE-serving-benchmark.md` for the full phase plan and
-`CLAUDE-CODE-HANDOFF.md` for the working conventions this repo follows.
+Phase 0 (environment), Phase 1 (model prep), Phase 2 (benchmark harness + sweep), and Phase 3
+(cost model) are done. Phase 4 (deployment: HF Hub model, Gradio demo, vllm-metal upstream
+contribution) is done except for a live hosted demo, which needs a Hugging Face PRO
+subscription this project isn't paying for — see `space/README.md`. Phase 5 (final write-up)
+is next.
 
 ## Setup
 
@@ -25,7 +27,8 @@ cp .env.example .env   # fill in GROQ_API_KEY / NIM_API_KEY for Phase 2; adjust 
 ```
 
 Requires native arm64 Python 3.12 (`python -c "import platform; print(platform.machine())"`
-must print `arm64`) and `vllm-metal` installed on the host — see `CLAUDE-CODE-HANDOFF.md` Part 1.
+must print `arm64`) and `vllm-metal` installed on the host (built from source against Apple's
+Metal Performance Shaders — see https://github.com/vllm-project/vllm-metal).
 
 ## Phase 1 — model preparation
 
@@ -66,8 +69,8 @@ uv run pip-audit --strict --ignore-vuln CVE-2026-71211 --ignore-vuln PYSEC-2026-
 
 ## Division of labour
 
-Per `CLAUDE-CODE-HANDOFF.md`: the cost model, judge/parity thresholds, and anything where the
-interesting interview question is "why did you design it that way" are written and owned by
-the project author. Provider adapters, sweep orchestration, chart generation, and CI are
-Claude Code's. See `docs/parity-check-design.md` for one such decision made under explicit
-delegation, with its reasoning kept on record.
+The cost model, judge/parity thresholds, and anything where the interesting interview
+question is "why did you design it that way" are written and owned by the project author.
+Provider adapters, sweep orchestration, chart generation, and CI are Claude Code's. See
+`docs/parity-check-design.md` for one such decision made under explicit delegation, with its
+reasoning kept on record.

@@ -1,8 +1,8 @@
-"""The one result schema every arm writes to. Per AGENTS.md's Pydantic-at-
-the-boundary rule: this is the single validated shape a raw benchmark
-request's outcome takes, whatever arm produced it — everything downstream
-(MLflow logging, percentile aggregation, cost modeling in Phase 3) reads
-this shape, never a raw dict.
+"""The one result schema every arm writes to. Per this project's
+validate-at-the-boundary convention: this is the single validated shape a
+raw benchmark request's outcome takes, whatever arm produced it —
+everything downstream (MLflow logging, percentile aggregation, cost
+modeling in Phase 3) reads this shape, never a raw dict.
 
 Granularity is per-REQUEST, not pre-aggregated: TTFT/ITL percentiles need
 the full distribution across many requests, so aggregation happens at

@@ -13,8 +13,8 @@ tokens/sec, check this assumption first before trusting the percentiles.
 Retry/backoff and connection pooling are the openai SDK's own responsibility
 here (AsyncOpenAI reuses an httpx connection pool across calls, and
 max_retries below hands off to its built-in exponential backoff) rather than
-reimplemented — per AGENTS.md, this is exactly the kind of provider-adapter
-plumbing that doesn't need a bespoke implementation.
+reimplemented — this is exactly the kind of provider-adapter plumbing that
+doesn't need a bespoke implementation.
 
 Every request sets `stop=STOP_SEQUENCES` — not optional, not arm-specific.
 This model's chat turns end with `<|im_end|>`, but Qwen2.5's config.json
