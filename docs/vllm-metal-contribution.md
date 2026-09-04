@@ -1,8 +1,9 @@
-# Draft: vllm-metal supported_models.md contribution
+# vllm-metal supported_models.md contribution
 
-**Not submitted yet.** This is a draft for review — nothing has been forked,
-branched, or opened. See the bottom of this file for exactly what happens
-once you say go.
+**Submitted.** Opened as [vllm-project/vllm-metal#689](https://github.com/vllm-project/vllm-metal/pull/689),
+from a fork at [tarun1125/vllm-metal](https://github.com/tarun1125/vllm-metal). This file is
+kept as the record of the reasoning and the reviewed draft the actual PR was built from — see
+the bottom of this file for exactly what was run to produce it.
 
 ## Why a prose note, not a new table row
 
@@ -94,12 +95,14 @@ code-specialized checkpoint + its quantized variants, matching the
 existing prose-note pattern used for the AWQ and GGUF verification call-outs.
 ```
 
-## What happens next (needs your explicit go-ahead, separately, before each step)
+## What actually happened
 
-1. `gh repo fork vllm-project/vllm-metal --clone=false` (forks to your account)
-2. Clone the fork, create a branch, apply the diff above to `docs/supported_models.md`
-3. Commit, push to your fork
-4. `gh pr create` against `vllm-project/vllm-metal` with the description above
-
-I will not run any of these without you confirming — this opens a real PR
-against someone else's project under your name.
+1. Forked to [tarun1125/vllm-metal](https://github.com/tarun1125/vllm-metal)
+   (`gh repo fork vllm-project/vllm-metal --clone=false`).
+2. Re-fetched the live `docs/supported_models.md` from upstream first, to confirm
+   nothing had drifted since this draft was written — it hadn't.
+3. Applied the exact diff above, committed, pushed to the fork.
+4. Opened [vllm-project/vllm-metal#689](https://github.com/vllm-project/vllm-metal/pull/689)
+   with the description above via `gh pr create`.
+5. GitHub's DCO check flagged the commit as missing a `Signed-off-by` trailer;
+   fixed with `git commit --amend --signoff` and a force-push to the fork branch.

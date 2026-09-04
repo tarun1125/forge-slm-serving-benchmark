@@ -85,7 +85,7 @@ src/forge/
   phase2/             # benchmark harness: arms (mlx_lm/Ollama/vllm-metal/hosted), sweep, MLflow, accuracy scoring
   phase3/             # cost model + report/chart generation
   phase4/             # HF Hub model upload
-docs/                 # cost model, parity-check design, vllm-metal contribution draft
+docs/                 # cost model, parity-check design, vllm-metal upstream contribution record
 space/                # Gradio demo — runs locally, not deployed as a live Space (see space/README.md)
 ollama/               # Modelfiles for the Ollama serving arm
 tests/                # pytest — mirrors src/forge structure
@@ -119,3 +119,4 @@ reasoning kept on record.
   https://huggingface.co/tarun-11/forge-qwen2.5-coder-1.5b-mongodb-gguf
 - **Upstream open-source contribution:** verified Qwen2.5-Coder-1.5B on Apple Silicon Metal,
   reported to [vllm-project/vllm-metal#689](https://github.com/vllm-project/vllm-metal/pull/689)
+  — full reasoning and reviewed draft in [docs/vllm-metal-contribution.md](docs/vllm-metal-contribution.md)
