@@ -57,6 +57,13 @@ dev = [
     "mypy>=1.11.0",
     "pip-audit>=2.7.0",
 ]
+# Phase 5: authoring/re-executing notebooks/forge_benchmark_analysis.ipynb.
+# Not a `dev` dependency — nothing in src/forge or its test suite needs a
+# notebook kernel, only a contributor regenerating that one artifact does.
+notebook = [
+    "jupyter>=1.0.0",
+    "nbconvert>=7.0.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/forge"]

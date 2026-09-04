@@ -11,15 +11,15 @@ the real vllm_metal numbers, called out everywhere it appears in `docs/cost-mode
 **Headline finding this benchmark is built to surface:** prefill (TTFT) is compute-bound;
 decode (inter-token latency) is memory-bandwidth-bound. They do not scale the same way, and
 this repo reports them as two separate metrics everywhere, never blended into one "latency"
-number. See `docs/` for the full write-up once Phase 5 lands.
+number. See [docs/write-up.md](docs/write-up.md) for the full write-up.
 
 ## Status
 
 Phase 0 (environment), Phase 1 (model prep), Phase 2 (benchmark harness + sweep), and Phase 3
 (cost model) are done. Phase 4 (deployment: HF Hub model, Gradio demo, vllm-metal upstream
 contribution) is done except for a live hosted demo, which needs a Hugging Face PRO
-subscription this project isn't paying for — see `space/README.md`. Phase 5 (final write-up)
-is next.
+subscription this project isn't paying for — see `space/README.md`. Phase 5 (notebook, plots,
+failure gallery, write-up) is in progress.
 
 ## Setup
 
@@ -91,7 +91,7 @@ ollama/               # Modelfiles for the Ollama serving arm
 tests/                # pytest — mirrors src/forge structure
 models/               # MANIFEST.json is committed; weight directories are gitignored
 results/              # benchmark output, gitignored except summaries
-notebooks/            # the one reproducible experiment (Phase 5 deliverable, not yet written)
+notebooks/            # forge_benchmark_analysis.ipynb — the reproducible experiment (Phase 5)
 ```
 
 ## Development
@@ -114,6 +114,16 @@ reasoning kept on record.
 
 ## Results & links
 
+- **Write-up:** [docs/write-up.md](docs/write-up.md) — leads with the headline
+  finding, the real cost/accuracy trade-offs, and the five questions this project
+  should answer cold
+- **Reproducible analysis notebook:** [notebooks/forge_benchmark_analysis.ipynb](notebooks/forge_benchmark_analysis.ipynb)
+  — the headline chart and all three required plots, regenerated from two small committed
+  summary files, no live sweep or servers required
+- **Failure gallery:** [docs/failure-gallery.md](docs/failure-gallery.md) — what actually broke
+  (a 100%-reproducible accuracy cliff, a malformed generation caught in the demo, real bugs from
+  every phase), and an honest note on the hardware failures the original plan expected but that
+  never happened
 - **Cost model and break-even analysis:** [docs/cost-model.md](docs/cost-model.md)
 - **Fine-tuned model (Q4_K_M GGUF), public on Hugging Face Hub:**
   https://huggingface.co/tarun-11/forge-qwen2.5-coder-1.5b-mongodb-gguf
