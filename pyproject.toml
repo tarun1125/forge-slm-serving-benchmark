@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "forge-slm-serving-benchmark"
 version = "0.1.0"
-description = "Local SLM serving & cost benchmark: mlx_lm, Ollama, vllm-metal, vLLM/CUDA, hosted API"
+description = "Local SLM serving & cost benchmark: mlx_lm, Ollama, vllm-metal, hosted API (plus a deferred, estimated-only vLLM/CUDA cost comparison)"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "MIT" }
