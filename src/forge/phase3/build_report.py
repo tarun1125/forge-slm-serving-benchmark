@@ -175,6 +175,23 @@ def render_chart(results: list[dict], hosted_cost: float) -> None:
         ):
             fastest_per_arm[arm] = row
 
+    # Different linestyles, not just colors, per arm — see the annotation below for
+    # why: at every volume in this grid, the three self-hosting curves differ by
+    # well under 0.1%, so on a log-log plot they render as one visible line
+    # regardless of color. Distinguishable linestyles at least signal "three
+    # series were actually plotted here" rather than looking like two are missing.
+    linestyles = {"mlx_lm": "-", "ollama": "--", "vllm_metal": ":"}
+    max_relative_spread = 0.0
+    for volume in volumes:
+        costs_at_volume = [
+            local_cost_per_query(
+                ASSUMPTIONS, row["throughput_tokens_per_sec"], row["avg_completion_tokens"], volume
+            ).total_cost_inr
+            for row in fastest_per_arm.values()
+        ]
+        spread = (max(costs_at_volume) - min(costs_at_volume)) / min(costs_at_volume)
+        max_relative_spread = max(max_relative_spread, spread)
+
     for arm, row in fastest_per_arm.items():
         costs = [
             local_cost_per_query(
@@ -185,9 +202,16 @@ def render_chart(results: list[dict], hosted_cost: float) -> None:
             ).total_cost_inr
             for v in volumes
         ]
-        ax.plot(volumes, costs, marker="o", label=f"{arm} ({row['variant']}, fastest)")
+        ax.plot(
+            volumes,
+            costs,
+            marker="o",
+            linestyle=linestyles.get(arm, "-"),
+            linewidth=2,
+            label=f"{arm} ({row['variant']}, fastest)",
+        )
 
-    ax.axhline(hosted_cost, color="black", linestyle="--", label="Groq (gpt-oss-120b), hosted API")
+    ax.axhline(hosted_cost, color="black", linestyle="-.", label="Groq (gpt-oss-120b), hosted API")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel("Monthly query volume")
@@ -195,6 +219,25 @@ def render_chart(results: list[dict], hosted_cost: float) -> None:
     ax.set_title("Self-hosting vs. hosted API: cost per query by monthly volume")
     ax.legend()
     ax.grid(True, which="both", alpha=0.3)
+    # The three self-hosting lines are visually indistinguishable on purpose, not
+    # a plotting bug: hardware amortization dominates cost at every volume this
+    # grid tests (none of the three variants approach the machine's lifetime
+    # throughput capacity even at 1M queries/month — see docs/cost-model.md), so
+    # throughput differences of up to 3x between arms produce a real but tiny
+    # cost difference, well under 1% at every point plotted.
+    ax.annotate(
+        f"All three self-hosting lines overlap here on purpose:\n"
+        f"cost differs by <{max_relative_spread:.1%} between arms at every\n"
+        f"volume plotted — hardware amortization dominates until\n"
+        f"a machine nears its lifetime throughput capacity, which\n"
+        f"none of these do even at 1M queries/month. See\n"
+        f"docs/cost-model.md.",
+        xy=(0.03, 0.03),
+        xycoords="axes fraction",
+        fontsize=8,
+        va="bottom",
+        bbox={"boxstyle": "round", "facecolor": "white", "edgecolor": "gray", "alpha": 0.9},
+    )
     fig.tight_layout()
     OUTPUT_CHART.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUTPUT_CHART, dpi=150)
