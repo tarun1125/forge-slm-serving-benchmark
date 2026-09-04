@@ -52,6 +52,7 @@ from mlx_lm import generate, load
 from forge.capstone_bridge import CapstoneHarness
 from forge.config import get_settings
 from forge.logging_config import configure_logging, get_logger, start_run
+from forge.query_guard import assert_generated_query_safe
 
 log = get_logger(__name__)
 
@@ -125,6 +126,9 @@ def execution_accuracy(
         db = client[case["database"]]
         try:
             query = normalize.normalize(generated_by_id[case["id"]])
+            # Second gate in front of the capstone harness's own allowlist —
+            # see forge.query_guard for the verified gaps it closes.
+            assert_generated_query_safe(query)
             result = execute_queries.safe_eval_query(query, db)
             if not isinstance(result, (int, float, str, bool)) and not isinstance(result, list):
                 result = list(result)
@@ -181,7 +185,7 @@ def main() -> None:
     # load()'s return type is a Union keyed on return_config (unused here, always False),
     # so mypy can't narrow it to the 2-tuple this call always produces at runtime.
     adapter_model, adapter_tokenizer = load(  # type: ignore[misc]
-        settings.base_model, adapter_path=str(settings.adapter_path)
+        settings.base_model, adapter_path=str(settings.require_adapter_path())
     )
     adapter_outputs = run_generation(adapter_model, adapter_tokenizer, cases, db_to_prompt, clean)
     del adapter_model  # free unified memory before loading the second model

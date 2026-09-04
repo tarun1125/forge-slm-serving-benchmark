@@ -170,7 +170,14 @@ async def run_sweep(
             with ManagedServer(arm_config) as _server:
                 async with make_client(arm_config) as client:
                     for cell in cells:
-                        cooled_down = True
+                        # None (not True) when thermal monitoring is off: "never
+                        # checked" and "checked, and it was cool" are different
+                        # claims. Defaulting this to True meant a --skip-thermal
+                        # run logged cooled_down_before_run=True for every cell,
+                        # which reads as a verified cooldown that never happened —
+                        # exactly the kind of telemetry that makes a benchmark
+                        # look more controlled than it was.
+                        cooled_down: bool | None = None
                         if thermal_monitor is not None:
                             cooled_down = wait_for_cooldown(thermal_monitor)
 

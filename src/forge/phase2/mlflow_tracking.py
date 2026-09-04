@@ -115,12 +115,20 @@ def log_raw_results(results: list[RequestResult]) -> None:
         mlflow.log_artifact(str(path))
 
 
-def log_thermal_flag(cooled_down: bool) -> None:
+def log_thermal_flag(cooled_down: bool | None) -> None:
     """Logs whether the configuration's pre-run cooldown wait actually
     succeeded (see thermal.wait_for_cooldown) — a config that ran hot
     should be visibly flagged in the results, not silently treated the
-    same as a properly-cooled run."""
-    mlflow.log_param("cooled_down_before_run", cooled_down)
+    same as a properly-cooled run.
+
+    None means thermal monitoring was disabled (--skip-thermal), so no
+    cooldown check ran at all. That is logged as the literal string
+    "not_monitored" rather than as True/False: an unmeasured run must not
+    be indistinguishable from a verified-cool one when the results are
+    read back later."""
+    mlflow.log_param(
+        "cooled_down_before_run", "not_monitored" if cooled_down is None else cooled_down
+    )
 
 
 def log_manifest_reference(manifest_path: Path) -> None:

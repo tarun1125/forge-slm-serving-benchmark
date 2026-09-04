@@ -129,6 +129,13 @@ reasoning and what was and wasn't tested.
   show the short-bucket cliff cleanly (100% consistent across 9 combinations
   isn't sampling noise), but not enough to distinguish, say, a 3-percentage-point
   quantization difference from noise with confidence.
+- **No thermal data.** The sweep ran with `--skip-thermal` (the sampler needs
+  `sudo powermetrics`, impractical to keep authenticated across a long
+  unattended run), so `thermal_pressure_level` and the power columns are null
+  on every row. This project therefore cannot say whether the machine throttled
+  during the sweep — only that no request failed. A logging bug made this
+  easy to misread as "no throttling occurred"; both the bug and the correction
+  are in `docs/failure-gallery.md`.
 
 ## The five questions this project should be able to answer cold
 

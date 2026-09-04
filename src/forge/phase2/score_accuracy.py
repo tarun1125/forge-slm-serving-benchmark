@@ -30,6 +30,7 @@ from pathlib import Path
 from forge.capstone_bridge import CapstoneHarness
 from forge.config import get_settings
 from forge.logging_config import configure_logging, get_logger, start_run
+from forge.query_guard import assert_generated_query_safe
 
 log = get_logger(__name__)
 
@@ -83,6 +84,11 @@ def score_generation(
 
     try:
         query = normalize.normalize(generated_text)
+        # Second gate, in front of the capstone harness's own allowlist — see
+        # forge.query_guard for the two verified gaps in that allowlist this
+        # closes. Runs post-normalize so it sees exactly the string that will
+        # be eval'd, not the pre-normalized form.
+        assert_generated_query_safe(query)
         result = execute_queries.safe_eval_query(query, db)
         if not isinstance(result, (int, float, str, bool)) and not isinstance(result, list):
             result = list(result)

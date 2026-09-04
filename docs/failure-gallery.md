@@ -2,15 +2,31 @@
 
 The project plan this repo started from expected a failure gallery built
 from hardware failure modes: OOM at high concurrency, thermal throttling
-mid-sweep, a model vllm-metal refuses to load. **None of those happened.**
-Across the full real sweep — 2,511 requests, 3 arms, 3 quantization levels
-each, concurrency 1–16, three prompt-length buckets — there are **zero
-request failures and zero recorded thermal-throttling events**
-(`thermal_pressure_level` is `null` on every single row; see
-`results/sweep_summary.json`). An Apple M5 Pro with 24GB of unified memory
-serving a 1.5B-parameter model at concurrency ≤16 has enough headroom that
-none of the plan's anticipated failure modes ever triggered — that's a real
-result, not a gap in this document.
+mid-sweep, a model vllm-metal refuses to load. Across the full real sweep —
+2,511 requests, 3 arms, 3 quantization levels each, concurrency 1–16, three
+prompt-length buckets — there are **zero request failures**. No OOM, and
+nothing vllm-metal refused to load.
+
+**On thermal throttling, this project cannot make a claim either way, and an
+earlier draft of this document wrongly implied it could.** `thermal_pressure_level`
+is `null` on all 2,511 rows, and it would be easy to read that as "no
+throttling occurred." It isn't — *no thermal telemetry was ever captured*.
+`cpu_power_mw`, `gpu_power_mw` and `peak_memory_mb` are null on every row too,
+which is the tell: that's missing instrumentation, not a quiet machine.
+
+The evidence says the sweep ran with thermal monitoring disabled
+(`--skip-thermal` exists precisely because the sampler shells out to `sudo
+powermetrics`, impractical to keep authenticated across a long unattended run).
+Two facts pin it down: had the monitor been running and reporting `Nominal`,
+that string would have been stamped onto the rows instead of `null`; and had it
+been running but returning nothing, `wait_for_cooldown()` would have timed out
+and logged `cooled_down_before_run=False`, whereas MLflow records `True` for
+all 150 cells. The only configuration consistent with both is a monitor that
+was never started.
+
+Either way the conclusion is the same: whether the M5 Pro throttled during this
+sweep is unmeasured. See failure #3 below for the logging bug that made this
+much harder to notice than it should have been.
 
 What actually broke is more interesting anyway: a 100%-reproducible
 accuracy cliff, a genuinely malformed model output caught in the deployed
@@ -60,7 +76,31 @@ qualitatively different failure than the clean-but-incorrect answers Phase
 example questions (a first-time visitor's first impression shouldn't be a
 syntax error) but kept here rather than quietly dropped.
 
-## 3. Real bugs found and fixed, by phase
+## 3. Telemetry that reported a check it never ran
+
+Found while reviewing this repo after the benchmark was "finished," and the
+reason the thermal gap above went unnoticed for so long.
+
+`sweep.py` initialised `cooled_down = True` before deciding whether thermal
+monitoring was even enabled, and `mlflow_tracking.log_thermal_flag()` was
+called unconditionally — outside the `if thermal_monitor is not None` guard
+that everything else thermal-related sat behind. The result: a `--skip-thermal`
+run logged `cooled_down_before_run=True` to MLflow for **all 150 cells**
+(135 sweep cells plus the 15 Ollama long-bucket re-runs), which reads as
+"a pre-run cooldown was verified" when in fact no cooldown check ever ran.
+
+The failure mode is the dangerous kind: not a crash, not a wrong number, but
+telemetry that makes an experiment look more controlled than it was, and that
+positively asserts a safety property nobody measured. It also actively
+disguised the missing thermal data — MLflow said the runs were cooled, so the
+null `thermal_pressure_level` column looked like "nothing to report" rather
+than "nothing was recorded."
+
+Fixed by defaulting the flag to `None` and logging it as the literal
+`"not_monitored"` when thermal monitoring is off, so "never checked" can no
+longer be mistaken for "checked, and it was fine."
+
+## 4. Real bugs found and fixed, by phase
 
 Selected from the commit history — not the only bugs found (see `git log`
 for the rest), but the ones with the clearest "here's what broke and why"

@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,20 +29,23 @@ class Settings(BaseSettings):
     hf_token: str | None = None
     hf_username: str | None = None
 
-    capstone_repo_path: Path = Field(
-        default=Path(
-            "/Users/tarungudapati/Documents/ai-projects/capstone-project/CSAIML-Capstone-Project-20"
-        )
-    )
+    # No default: these are machine-specific paths, and hardcoding one
+    # developer's home directory into a public repo both leaks that local
+    # directory layout and silently hands anyone else a default that cannot
+    # exist on their machine. Required via .env (see .env.example) and
+    # validated by the require_* helpers below, which say exactly what to set.
+    capstone_repo_path: Path | None = None
     base_model: str = "mlx-community/Qwen2.5-Coder-1.5B-Instruct-bf16"
-    adapter_path: Path = Field(
-        default=Path(
-            "/Users/tarungudapati/Documents/ai-projects/capstone-project/"
-            "CSAIML-Capstone-Project-20/fine_tuning/adapters_23db_1000iter"
-        )
-    )
+    adapter_path: Path | None = None
 
     def require_capstone_repo(self) -> Path:
+        if self.capstone_repo_path is None:
+            raise RuntimeError(
+                "CAPSTONE_REPO_PATH is not set. FORGE reuses the capstone's eval harness "
+                "(rag_test.json, split_manifest.json, evaluation/execute_queries.py) rather "
+                "than duplicating it — point this at your local clone of that repo. "
+                "See .env.example and docs/parity-check-design.md."
+            )
         if not self.capstone_repo_path.exists():
             raise RuntimeError(
                 f"CAPSTONE_REPO_PATH={self.capstone_repo_path} does not exist. FORGE reuses the "
@@ -52,6 +54,17 @@ class Settings(BaseSettings):
                 "docs/parity-check-design.md."
             )
         return self.capstone_repo_path
+
+    def require_adapter_path(self) -> Path:
+        if self.adapter_path is None:
+            raise RuntimeError(
+                "ADAPTER_PATH is not set. Phase 1 needs the LoRA adapter directory to fuse "
+                "into the base model — point this at the fine-tuned adapter from the capstone "
+                "project. See .env.example."
+            )
+        if not self.adapter_path.exists():
+            raise RuntimeError(f"ADAPTER_PATH={self.adapter_path} does not exist.")
+        return self.adapter_path
 
 
 def get_settings() -> Settings:

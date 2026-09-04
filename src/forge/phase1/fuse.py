@@ -91,10 +91,16 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-model", default=settings.base_model)
-    parser.add_argument("--adapter-path", type=Path, default=settings.adapter_path)
+    parser.add_argument("--adapter-path", type=Path, default=None)
     parser.add_argument("--save-path", type=Path, default=Path("models/fused-bf16"))
     args = parser.parse_args()
 
+    # Falls back to ADAPTER_PATH from .env when --adapter-path isn't given;
+    # require_adapter_path() raises with the exact variable to set rather than
+    # an AttributeError on None or a confusing "does not exist" on a path that
+    # was never configured in the first place.
+    if args.adapter_path is None:
+        args.adapter_path = settings.require_adapter_path()
     if not args.adapter_path.exists():
         raise RuntimeError(f"Adapter path does not exist: {args.adapter_path}")
 
