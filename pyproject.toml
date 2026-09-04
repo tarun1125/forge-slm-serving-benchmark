@@ -43,6 +43,10 @@ dependencies = [
     "psutil>=6.0.0",
     "uvicorn>=0.30.0",
     "matplotlib>=3.9.0",
+    # Phase 4: uploading the GGUF to HF Hub (forge.phase4.upload_model).
+    # Pinned to match the version actually installed and tested in
+    # space/requirements.txt for the Gradio demo, which uses the same API.
+    "huggingface_hub>=1.30.0",
 ]
 
 [dependency-groups]

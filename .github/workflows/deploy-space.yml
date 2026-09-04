@@ -1,0 +1,39 @@
+name: Deploy HF Space
+
+# Triggered by pushing a version tag (e.g. `git tag v0.1.0 && git push origin v0.1.0`) —
+# deliberately not on every push to main, so a Space deploy is a distinct,
+# intentional release step, not an accidental side effect of routine commits.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # HF Spaces are themselves git repos. Pushing space/ as the root of a
+      # throwaway git repo, then force-pushing that to the Space's remote, is
+      # the standard way to sync a subdirectory of a larger monorepo into a
+      # Space without dragging the rest of this repo (models/, docs/, etc.)
+      # along with it.
+      - name: Push space/ to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          # Set this repo variable (Settings -> Secrets and variables -> Actions -> Variables)
+          # to "<hf-username>/<space-name>" once the Space exists, e.g. "yourname/forge-nl-to-mongodb".
+          HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
+        run: |
+          if [ -z "$HF_SPACE_ID" ]; then
+            echo "HF_SPACE_ID repo variable is not set — skipping deploy. See this workflow's comments." >&2
+            exit 1
+          fi
+          cd space
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Deploy ${{ github.ref_name }}"
+          git push -q -f "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_ID}" HEAD:main

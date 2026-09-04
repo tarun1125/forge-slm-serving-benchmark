@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     groq_api_key: str | None = None
     nim_api_key: str | None = None
 
+    # --- Phase 4: HF Hub model upload + Space deploy ---
+    hf_token: str | None = None
+    hf_username: str | None = None
+
     capstone_repo_path: Path = Field(
         default=Path(
             "/Users/tarungudapati/Documents/ai-projects/capstone-project/CSAIML-Capstone-Project-20"
