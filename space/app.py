@@ -30,7 +30,7 @@ import gradio as gr
 from huggingface_hub import hf_hub_download
 from llama_cpp import Llama
 
-MODEL_REPO_ID = "REPLACE_WITH_HF_USERNAME/forge-qwen2.5-coder-1.5b-mongodb-gguf"
+MODEL_REPO_ID = "tarun-11/forge-qwen2.5-coder-1.5b-mongodb-gguf"
 MODEL_FILENAME = "model-Q4_K_M.gguf"
 # Set to a local .gguf path to bypass the HF Hub download entirely — used to
 # test this app before the model exists on the Hub, and useful for local
@@ -38,7 +38,8 @@ MODEL_FILENAME = "model-Q4_K_M.gguf"
 LOCAL_MODEL_PATH = os.environ.get("FORGE_LOCAL_MODEL_PATH")
 SYSTEM_PROMPT = Path(__file__).parent.joinpath("system_prompt.txt").read_text(encoding="utf-8")
 
-STOP_SEQUENCES = ["<|im_end|>", "<|endoftext|>"]  # see src/forge/phase2/client.py's own note on this
+# see src/forge/phase2/client.py's own note on this
+STOP_SEQUENCES = ["<|im_end|>", "<|endoftext|>"]
 
 EXAMPLE_QUESTIONS = [
     "display those departments where more than ten employees work who got a commission percentage.",
@@ -66,7 +67,8 @@ def get_model() -> Llama:
         )
         _llm = Llama(
             model_path=model_path,
-            n_ctx=8192,  # see fine_tuning/ollama_register.py's own note on Ollama's default 4096 being too small
+            # see fine_tuning/ollama_register.py's own note on Ollama's default 4096 being too small
+            n_ctx=8192,
             n_threads=4,
             verbose=False,
         )
@@ -105,8 +107,8 @@ with gr.Blocks(title="FORGE — NL to MongoDB") as demo:
         "on CPU. Schema is fixed to a real training-format prompt covering "
         "4 databases (college_3, flight_4, hr_1, inn_1) — try a question "
         "about employees, departments, flights, courses, or hotel rooms. "
-        "[Full benchmark write-up](https://github.com/) — throughput, "
-        "accuracy, and cost across 3 serving stacks and 3 quantization levels."
+        "[Full benchmark write-up](https://github.com/tarun1125/forge-slm-serving-benchmark) — "
+        "throughput, accuracy, and cost across 3 serving stacks and 3 quantization levels."
     )
     with gr.Row():
         question = gr.Textbox(

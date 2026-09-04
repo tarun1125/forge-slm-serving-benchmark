@@ -52,20 +52,22 @@ A LoRA fine-tune of Qwen2.5-Coder-1.5B-Instruct, trained for natural-language
 as {quant_type} GGUF (llama.cpp K-quant) for CPU serving via
 `llama-cpp-python` or Ollama.
 
-Served in the [FORGE benchmark's Space demo](https://huggingface.co/spaces/{hf_username}/forge-nl-to-mongodb).
-Full write-up, benchmark methodology, and results across serving stacks
+A runnable Gradio demo (space/app.py) ships in the project repo, along with
+the full write-up, benchmark methodology, and results across serving stacks
 (mlx_lm, Ollama, vLLM-Metal) and quantization levels:
-https://github.com/{hf_username}/forge-slm-serving-benchmark
+{github_repo_url}
 
 Not the same quantization implementation as the MLX 4-bit variant used
 elsewhere in that benchmark (llama.cpp K-quant vs. MLX's own INT4 scheme) —
 this GGUF is specifically the one portable to non-Apple-Silicon infrastructure.
 """
 
+DEFAULT_GITHUB_REPO_URL = "https://github.com/tarun1125/forge-slm-serving-benchmark"
 
-def build_model_card(hf_username: str, repo_name: str, quant_type: str) -> str:
+
+def build_model_card(repo_name: str, quant_type: str, github_repo_url: str) -> str:
     return MODEL_CARD_TEMPLATE.format(
-        repo_name=repo_name, quant_type=quant_type, hf_username=hf_username
+        repo_name=repo_name, quant_type=quant_type, github_repo_url=github_repo_url
     )
 
 
@@ -75,6 +77,7 @@ def upload(
     hf_username: str,
     repo_suffix: str,
     quant_type: str,
+    github_repo_url: str,
 ) -> str:
     if not gguf_path.exists():
         raise RuntimeError(f"{gguf_path} does not exist — run forge.phase1.gguf_export first.")
@@ -86,7 +89,9 @@ def upload(
     api.create_repo(repo_id=repo_id, repo_type="model", exist_ok=True)
 
     card_path = gguf_path.parent / "README.md.generated"
-    card_path.write_text(build_model_card(hf_username, repo_suffix, quant_type), encoding="utf-8")
+    card_path.write_text(
+        build_model_card(repo_suffix, quant_type, github_repo_url), encoding="utf-8"
+    )
 
     log.info(
         "upload_model.upload_file",
@@ -124,6 +129,12 @@ def main() -> None:
         default="Q4_K_M",
         help="Label only, for the generated model card — does not re-quantize.",
     )
+    parser.add_argument(
+        "--github-repo-url",
+        default=DEFAULT_GITHUB_REPO_URL,
+        help="Linked from the generated model card. Not derived from HF_USERNAME — "
+        "the GitHub and HF usernames are not guaranteed to match (they don't, here).",
+    )
     args = parser.parse_args()
 
     if not settings.hf_token:
@@ -138,6 +149,7 @@ def main() -> None:
         hf_username=settings.hf_username,
         repo_suffix=args.repo_suffix,
         quant_type=args.quant_type,
+        github_repo_url=args.github_repo_url,
     )
     log.info("run.finish", run_id=run_id, phase="phase4.upload_model", repo_id=repo_id)
     print(f"\nUploaded to: https://huggingface.co/{repo_id}")

@@ -3,6 +3,15 @@ name: Deploy HF Space
 # Triggered by pushing a version tag (e.g. `git tag v0.1.0 && git push origin v0.1.0`) —
 # deliberately not on every push to main, so a Space deploy is a distinct,
 # intentional release step, not an accidental side effect of routine commits.
+#
+# Currently dormant by design, not by oversight: as of this writing, Hugging
+# Face requires a PRO subscription to host a Gradio Space on free CPU (a
+# Gradio create_repo call returns 402 Payment Required on a free account —
+# confirmed live, not assumed). The model itself is already public at
+# https://huggingface.co/tarun-11/forge-qwen2.5-coder-1.5b-mongodb-gguf, and
+# space/ is runnable locally (`pip install -r space/requirements.txt &&
+# python space/app.py`). This workflow is ready to go the moment HF_SPACE_ID
+# (see below) is set — no code changes needed, just subscribe and set it.
 on:
   push:
     tags:

@@ -1,6 +1,6 @@
 # FORGE — Local SLM Serving & Cost Benchmark
 
-![CI](https://github.com/tarungudapati/forge-slm-serving-benchmark/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/tarun1125/forge-slm-serving-benchmark/actions/workflows/ci.yml/badge.svg)
 
 A LoRA fine-tuned Qwen2.5-Coder-1.5B, served five ways — Apple Silicon MLX, Ollama, vLLM on
 Metal, vLLM on CUDA, and a hosted API — measured for latency, throughput, quality, and cost
