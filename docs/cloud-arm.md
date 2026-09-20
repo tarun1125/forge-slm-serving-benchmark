@@ -174,11 +174,11 @@ otherwise you cannot tell it apart from a finished run.
 
 ## Getting the weights to the VM
 
-`models/fused-bf16` is 2.9 GB and gitignored, and it is the only artifact in
+`models/fused-bf16` is 3.1 GB (2.9 GiB) and gitignored, and it is the only artifact in
 `models/` that vLLM on CUDA can load. `forge.phase4.upload_fused_bf16` moves it
 to a **private** Hugging Face repo, after which every VM you ever build pulls it
-at datacentre speed. Cloud ingress is free on both Azure and AWS, so the 2.9 GB
-goes up your home connection exactly once.
+at datacentre speed. Cloud ingress is free on both Azure and AWS, so it goes up
+your home connection exactly once.
 
 ```bash
 python -m forge.phase4.upload_fused_bf16 --dry-run   # both guards, no network, no token
@@ -192,22 +192,37 @@ and a 3 GB fine-tune should not become public because a default was convenient.
 
 Two guards run first, and both refuse rather than warn:
 
-**The directory must still be the artifact Phase 1 verified.** It is hashed with
-`artifact_hash.hash_directory` and compared to `models/MANIFEST.json`, and the
-manifest's parity check must have passed. This is the same promise
-`sweep.py`'s `load_verified_variants()` makes locally, applied at the moment the
-artifact leaves this machine — uploading a drifted checkpoint would put
-unverified weights on a GPU and produce numbers that look real. Note that the
-hash is path-sensitive, so a stray file in the directory counts as drift; that
-is why the generated model card is written to a temp name and removed even on
-failure.
-
 **Every file vLLM needs must be present**, `chat_template.jinja` above all.
 `models/fused-bf16/tokenizer_config.json` has no `chat_template` key — checked,
 not assumed — so the template exists only in that sibling file. A repo missing
 it serves a model that formats prompts differently from every other arm, and the
 failure is silent: the server starts, answers, and scores near zero for reasons
-that look like a model problem.
+that look like a model problem. This runs first because it is the cheap check
+and because it gives the actionable error; a missing file also trips the drift
+guard below, and "missing chat_template.jinja" sends you somewhere more useful
+than "the hash doesn't match".
+
+**The directory must still be the artifact Phase 1 verified.** It is hashed with
+`artifact_hash.hash_directory` and compared to `models/MANIFEST.json`, and the
+manifest's parity check must have passed. This is the same promise
+`sweep.py`'s `load_verified_variants()` makes locally, applied at the moment the
+artifact leaves this machine — uploading a drifted checkpoint would put
+unverified weights on a GPU and produce numbers that look real. The hash is
+path-sensitive, so a stray file counts as drift; that is why the generated model
+card is committed from memory as bytes and never written into the directory it
+describes.
+
+**An existing repo's visibility must match what was asked for.**
+`create_repo(exist_ok=True)` does not change the settings of a repo that already
+exists, so without this check a private upload into a repo created public
+earlier would succeed, log `private=True`, and publish the weights anyway. It
+refuses rather than flipping the setting: changing the visibility of a repo
+someone may already be consuming is not this script's call.
+
+All files go up in a **single `create_commit`**, not one call per file. A
+six-call upload that fails after `model.safetensors` lands leaves a repo missing
+its tokenizer — which still starts and serves, and is exactly the partial state
+the completeness guard exists to prevent.
 
 The generated model card records the adapter hash, the parity-check result, the
 directory hash, and a per-file SHA-256 table, so the published repo can be

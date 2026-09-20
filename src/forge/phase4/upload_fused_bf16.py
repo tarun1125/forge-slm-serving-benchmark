@@ -6,7 +6,7 @@ its docstring says the MLX fused variants are "a separate, optional step if
 ever wanted". The cloud arm is what makes that step wanted: fused-bf16 is the
 only artifact in models/ that vLLM on CUDA can load (fused-4bit and fused-8bit
 are MLX affine-quantised; the GGUFs are a third format), and it is gitignored,
-so a VM has no way to reach it. 2.9 GB up a home connection once, then every
+so a VM has no way to reach it. 3.1 GB up a home connection once, then every
 future VM pulls it from HF at datacentre speed for free.
 
 Private by default, unlike upload_model.py. That module publishes the demo's
@@ -14,21 +14,25 @@ model deliberately; this one exists to move weights to a machine you rented,
 and defaulting a 3 GB fine-tune to public because it was convenient is not a
 decision worth making by accident. Pass --public to override.
 
-Two guards run before anything is uploaded, both of which refuse rather than
+Three guards run before anything is uploaded, all of which refuse rather than
 warn:
 
-  1. The directory must still hash to what models/MANIFEST.json recorded, and
-     that manifest's parity check must have passed. Uploading a checkpoint
-     that has drifted from the verified one would put unverified weights on a
-     GPU and produce numbers that look real. This is the same promise
-     sweep.py's load_verified_variants() makes locally, applied at the point
-     the artifact leaves this machine.
-  2. Every file vLLM needs must be present — chat_template.jinja above all.
+  1. Every file vLLM needs must be present — chat_template.jinja above all.
      tokenizer_config.json in this directory has NO chat_template key (checked:
      the template lives only in the sibling .jinja file), so a repo missing it
      serves a model that formats prompts differently from every other arm in
      this benchmark. That failure is silent: the server starts, answers, and
      scores near zero for reasons that look like a model problem.
+  2. The directory must still hash to what models/MANIFEST.json recorded, and
+     that manifest's parity check must have passed. Uploading a checkpoint
+     that has drifted from the verified one would put unverified weights on a
+     GPU and produce numbers that look real. This is the same promise
+     sweep.py's load_verified_variants() makes locally, applied at the point
+     the artifact leaves this machine.
+  3. If the repo already exists, its visibility must match what was asked for.
+     create_repo(exist_ok=True) does not change an existing repo's settings, so
+     without this a private upload into a repo someone made public earlier
+     succeeds, logs private=True, and publishes the weights anyway.
 
 This is an outward-facing action that creates a repo under your account. Like
 upload_model.py it is NOT run by anything automatically. Run it yourself:
@@ -43,7 +47,7 @@ import argparse
 import json
 from pathlib import Path
 
-from huggingface_hub import HfApi
+from huggingface_hub import CommitOperationAdd, HfApi
 
 from forge.artifact_hash import hash_directory, hash_file
 from forge.config import get_settings
@@ -135,10 +139,12 @@ Per-file SHA-256 of what was uploaded:
 
 def verify_against_manifest(
     model_dir: Path, manifest_path: Path, variant_name: str = "bf16"
-) -> dict:
+) -> tuple[dict, dict]:
     """Refuses unless the directory still IS the artifact Phase 1 verified.
 
-    Returns the manifest's variant entry. Raises on: a missing manifest, a
+    Returns (variant entry, whole manifest) — the caller needs both to build
+    the model card, and handing back the parsed manifest saves reading and
+    parsing the same file twice in one run. Raises on: a missing manifest, a
     manifest whose parity check didn't pass, a variant it doesn't describe, or
     a directory whose content hash has drifted from the recorded one.
     """
@@ -173,7 +179,7 @@ def verify_against_manifest(
             "The directory has changed since the parity check verified it. Re-run "
             "forge.phase1.parity_check and forge.phase1.manifest, or restore the directory."
         )
-    return entry
+    return entry, manifest
 
 
 def check_required_files(model_dir: Path) -> list[Path]:
@@ -210,6 +216,26 @@ def build_model_card(
     )
 
 
+def assert_visibility(api: HfApi, repo_id: str, private: bool) -> None:
+    """create_repo(exist_ok=True) is a no-op on a repo that already exists —
+    including its visibility. So asking for a private repo that was created
+    public earlier silently gets you a public one, and 3 GB of fine-tuned
+    weights go out in the open while the log line says private=True. Checked
+    rather than assumed; refuses rather than flipping the setting, because
+    changing the visibility of a repo someone may already be consuming is not
+    this script's call to make."""
+    info = api.repo_info(repo_id=repo_id, repo_type="model")
+    if private and not info.private:
+        raise RuntimeError(
+            f"{repo_id} already exists and is PUBLIC, but a private upload was requested. "
+            "create_repo does not change the visibility of an existing repo. Either delete "
+            "it, change its visibility in the Hub settings, choose a different "
+            "--repo-suffix, or pass --public if publishing really is what you want. "
+            "Nothing has been uploaded."
+        )
+    log.info("upload_fused_bf16.visibility_ok", repo_id=repo_id, private=info.private)
+
+
 def upload(
     model_dir: Path,
     manifest_path: Path,
@@ -220,9 +246,20 @@ def upload(
     private: bool = True,
     dry_run: bool = False,
 ) -> str:
-    entry = verify_against_manifest(model_dir, manifest_path)
+    if not dry_run and not hf_token:
+        raise RuntimeError("An HF token is required to upload — see .env.example's HF_TOKEN.")
+
+    # Completeness before drift, in that order for two reasons. It is the
+    # cheap check (a handful of stat calls against hashing 3 GB), and when a
+    # file is genuinely missing it gives the actionable error — "missing
+    # chat_template.jinja" — instead of the generic hash mismatch that a
+    # missing file also produces. Note the overlap that implies: whenever the
+    # manifest was generated from a complete directory, the drift guard would
+    # catch a missing file too. check_required_files earns its place on the
+    # case the drift guard cannot see, a manifest recorded from a directory
+    # that never had the file in the first place.
     files = check_required_files(model_dir)
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    entry, manifest = verify_against_manifest(model_dir, manifest_path)
 
     repo_id = f"{hf_username}/{repo_suffix}"
     total_mb = round(sum(p.stat().st_size for p in files) / 1e6, 1)
@@ -248,36 +285,34 @@ def upload(
     api = HfApi(token=hf_token)
     log.info("upload_fused_bf16.create_repo", repo_id=repo_id, private=private)
     api.create_repo(repo_id=repo_id, repo_type="model", private=private, exist_ok=True)
+    assert_visibility(api, repo_id, private)
 
-    for path in files:
-        log.info(
-            "upload_fused_bf16.upload_file",
-            repo_id=repo_id,
-            file=path.name,
-            size_mb=round(path.stat().st_size / 1e6, 1),
-        )
-        api.upload_file(
-            path_or_fileobj=str(path),
-            path_in_repo=path.name,
-            repo_id=repo_id,
-            repo_type="model",
-        )
+    # One commit, not one per file. check_required_files' own docstring says a
+    # partial upload is worse than none because the resulting repo still starts
+    # and serves — uploading the six files in six separate calls would be
+    # exactly that failure, since a network error after model.safetensors
+    # lands leaves a repo missing its tokenizer. create_commit applies all of
+    # them or none.
+    #
+    # The card is passed as bytes and never written to disk. Writing it inside
+    # model_dir (the obvious place) would put a file in the very directory
+    # whose hash this module just asserted, so an interrupted run would leave
+    # the next run's drift guard failing for a reason unrelated to the weights
+    # — see tests/test_upload_fused_bf16.py::test_rejects_an_added_file.
+    operations = [
+        CommitOperationAdd(path_in_repo=path.name, path_or_fileobj=str(path)) for path in files
+    ]
+    operations.append(
+        CommitOperationAdd(path_in_repo="README.md", path_or_fileobj=card.encode("utf-8"))
+    )
 
-    card_path = model_dir / "README.md.generated"
-    card_path.write_text(card, encoding="utf-8")
-    try:
-        api.upload_file(
-            path_or_fileobj=str(card_path),
-            path_in_repo="README.md",
-            repo_id=repo_id,
-            repo_type="model",
-        )
-    finally:
-        # In a temp name inside model_dir, and removed even on failure — a
-        # stray file here would change the directory hash and make the next
-        # run's manifest check fail for a reason that has nothing to do with
-        # the weights.
-        card_path.unlink(missing_ok=True)
+    log.info("upload_fused_bf16.commit", repo_id=repo_id, n_operations=len(operations))
+    api.create_commit(
+        repo_id=repo_id,
+        repo_type="model",
+        operations=operations,
+        commit_message=f"Add fused bf16 checkpoint ({entry['hash'][:19]})",
+    )
 
     log.info("upload_fused_bf16.finish", repo_id=repo_id)
     return repo_id

@@ -15,8 +15,10 @@ import pytest
 from forge.artifact_hash import hash_directory
 from forge.phase4.upload_fused_bf16 import (
     REQUIRED_FILES,
+    assert_visibility,
     build_model_card,
     check_required_files,
+    upload,
     verify_against_manifest,
 )
 
@@ -55,8 +57,10 @@ def _manifest(tmp_path: Path, model_dir: Path, **overrides) -> Path:
 class TestVerifyAgainstManifest:
     def test_accepts_an_unchanged_directory(self, tmp_path):
         d = _model_dir(tmp_path)
-        entry = verify_against_manifest(d, _manifest(tmp_path, d))
+        entry, manifest = verify_against_manifest(d, _manifest(tmp_path, d))
         assert entry["name"] == "bf16"
+        # The whole manifest comes back too, so the caller doesn't re-read it.
+        assert manifest["parity_check"]["passed"] is True
 
     def test_rejects_a_changed_file(self, tmp_path):
         d = _model_dir(tmp_path)
@@ -138,8 +142,7 @@ class TestModelCard:
     def test_carries_the_provenance_a_reader_needs(self, tmp_path):
         d = _model_dir(tmp_path)
         manifest_path = _manifest(tmp_path, d)
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        entry = verify_against_manifest(d, manifest_path)
+        entry, manifest = verify_against_manifest(d, manifest_path)
 
         card = build_model_card(
             "forge-bf16", entry, manifest, check_required_files(d), "https://example.invalid/repo"
@@ -157,12 +160,124 @@ class TestModelCard:
     def test_documents_the_chat_template_flag(self, tmp_path):
         d = _model_dir(tmp_path)
         manifest_path = _manifest(tmp_path, d)
+        entry, manifest = verify_against_manifest(d, manifest_path)
         card = build_model_card(
-            "forge-bf16",
-            verify_against_manifest(d, manifest_path),
-            json.loads(manifest_path.read_text(encoding="utf-8")),
-            check_required_files(d),
-            "https://example.invalid/repo",
+            "forge-bf16", entry, manifest, check_required_files(d), "https://example.invalid/repo"
         )
         assert "--chat-template" in card
         assert "float16" in card  # the Turing caveat
+
+
+class TestVisibilityGuard:
+    """create_repo(exist_ok=True) silently leaves an existing repo's visibility
+    alone, so "private=True" is a request, not a guarantee. These cover the
+    case where that difference would publish 3 GB of weights by accident."""
+
+    class _Info:
+        def __init__(self, private: bool):
+            self.private = private
+
+    class _Api:
+        def __init__(self, private: bool):
+            self._private = private
+
+        def repo_info(self, repo_id, repo_type):
+            return TestVisibilityGuard._Info(self._private)
+
+    def test_raises_when_an_existing_repo_is_public(self):
+        with pytest.raises(RuntimeError, match="already exists and is PUBLIC"):
+            assert_visibility(self._Api(private=False), "me/forge-bf16", private=True)
+
+    def test_passes_when_the_repo_is_private(self):
+        assert_visibility(self._Api(private=True), "me/forge-bf16", private=True)
+
+    def test_public_upload_accepts_a_public_repo(self):
+        assert_visibility(self._Api(private=False), "me/forge-bf16", private=False)
+
+
+class TestTokenGuard:
+    def test_upload_refuses_without_a_token(self, tmp_path):
+        d = _model_dir(tmp_path)
+        with pytest.raises(RuntimeError, match="HF token is required"):
+            upload(
+                model_dir=d,
+                manifest_path=_manifest(tmp_path, d),
+                hf_token="",
+                hf_username="me",
+                repo_suffix="forge-bf16",
+                github_repo_url="https://example.invalid/repo",
+            )
+
+    def test_dry_run_needs_no_token(self, tmp_path, capsys):
+        """The whole point of --dry-run is that it can be run before you have
+        credentials, so it must not trip the token guard."""
+        d = _model_dir(tmp_path)
+        repo_id = upload(
+            model_dir=d,
+            manifest_path=_manifest(tmp_path, d),
+            hf_token="",
+            hf_username="me",
+            repo_suffix="forge-bf16",
+            github_repo_url="https://example.invalid/repo",
+            dry_run=True,
+        )
+        assert repo_id == "me/forge-bf16"
+        assert "nothing uploaded" in capsys.readouterr().out
+
+    def test_dry_run_still_runs_the_guards(self, tmp_path):
+        """A dry run that skipped verification would be worthless as a
+        pre-flight check. The manifest is recorded from the already-incomplete
+        directory on purpose: that is the one case the drift guard cannot see,
+        and the case check_required_files exists for."""
+        d = _model_dir(tmp_path)
+        (d / "chat_template.jinja").unlink()
+        manifest = _manifest(tmp_path, d)
+
+        with pytest.raises(RuntimeError, match="chat_template.jinja"):
+            upload(
+                model_dir=d,
+                manifest_path=manifest,
+                hf_token="",
+                hf_username="me",
+                repo_suffix="forge-bf16",
+                github_repo_url="https://example.invalid/repo",
+                dry_run=True,
+            )
+
+    def test_dry_run_writes_nothing_into_the_model_dir(self, tmp_path):
+        """The card is built in memory and committed as bytes; a file left in
+        model_dir would break the drift guard on the next run."""
+        d = _model_dir(tmp_path)
+        before = sorted(p.name for p in d.iterdir())
+        upload(
+            model_dir=d,
+            manifest_path=_manifest(tmp_path, d),
+            hf_token="",
+            hf_username="me",
+            repo_suffix="forge-bf16",
+            github_repo_url="https://example.invalid/repo",
+            dry_run=True,
+        )
+        assert sorted(p.name for p in d.iterdir()) == before
+
+
+class TestGuardOrdering:
+    def test_a_missing_file_reports_itself_not_a_hash_mismatch(self, tmp_path):
+        """Deleting a file trips BOTH guards: the directory no longer hashes to
+        the manifest either. The specific error has to win, or the person
+        reading it goes looking for a corrupted checkpoint instead of a file
+        they forgot to copy."""
+        d = _model_dir(tmp_path)
+        manifest = _manifest(tmp_path, d)
+        (d / "chat_template.jinja").unlink()
+
+        with pytest.raises(RuntimeError, match="chat_template.jinja"):
+            upload(
+                model_dir=d,
+                manifest_path=manifest,
+                hf_token="",
+                hf_username="me",
+                repo_suffix="forge-bf16",
+                github_repo_url="https://example.invalid/repo",
+                dry_run=True,
+            )
