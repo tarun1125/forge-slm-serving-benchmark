@@ -4,6 +4,8 @@ this machine's actual installs, not assumed:
   - mlx_lm:      `mlx_lm.server` ships an OpenAI-compatible HTTP server.
   - ollama:      native OpenAI-compatible endpoint at /v1/chat/completions.
   - vllm_metal:  `vllm serve <model>` — standard vLLM OpenAI-compatible server.
+  - vllm_cuda:   the same `vllm serve`, on a rented NVIDIA GPU — this
+                 process never launches it, it only points at it.
   - hosted_api:  Groq and NVIDIA NIM are OpenAI-compatible by design.
 One client (client.py) therefore serves every arm; ArmConfig is the only
 thing that differs per arm.
@@ -26,6 +28,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from forge.config import Settings
+from forge.hardware import ServerHardware
 
 MODELS_DIR = Path("models")
 
@@ -53,7 +56,7 @@ VLLM_METAL_MODEL_VARIANTS = MLX_MODEL_VARIANTS
 
 @dataclass(frozen=True)
 class ArmConfig:
-    name: str  # "mlx_lm" | "ollama" | "vllm_metal" | "hosted_api"
+    name: str  # "mlx_lm" | "ollama" | "vllm_metal" | "vllm_cuda" | "hosted_api"
     model_variant: str  # e.g. "bf16", "q4", "groq-llama-70b" — arm-specific label
     base_url: str
     model_id: str  # the string sent as `model` in the chat-completions request
@@ -65,6 +68,11 @@ class ArmConfig:
     # mlx_lm.server before this default shipped anywhere it could bite silently.
     health_check_path: str = "/models"
     extra_request_params: dict = field(default_factory=dict)
+    # None means "the client machine IS the serving machine" — true for every
+    # local arm, and the reason this isn't just a string with a "local"
+    # sentinel. Set only for arms that serve from somewhere else; client.py
+    # copies it onto every RequestResult. See hardware.ServerHardware.
+    server_hardware: ServerHardware | None = None
 
 
 def mlx_lm_arm(model_variant: str, port: int = 8080) -> ArmConfig:
@@ -127,6 +135,79 @@ def vllm_metal_arm(
             str(gpu_memory_utilization),
         ],
         extra_request_params={"max_num_seqs": max_num_seqs},
+    )
+
+
+def vllm_cuda_arm(model_variant: str, settings: Settings | None = None) -> ArmConfig:
+    """The cloud-GPU arm — the fifth arm the plan called for and Phase 3 has
+    so far only estimated (see docs/cost-model.md's scaling-factor row).
+
+    Three things make this different from vllm_metal_arm even though both
+    run the same `vllm serve`:
+
+    launch_command is None. The server is already running on a rented VM,
+    so ManagedServer treats this exactly like Ollama or a hosted API: a
+    no-op start/stop. That also means nothing health-checks the endpoint
+    before the sweep starts — curl base_url + "/models" yourself first, or
+    a dead tunnel produces a full run of failed rows rather than an error.
+
+    bf16 only, and the caller can't ask for anything else. models/fused-4bit
+    and fused-8bit are MLX affine-quantised (see their config.json's
+    `"mode": "affine"`); vLLM on CUDA cannot load them, and the GGUF exports
+    are a third format again. A CUDA-native quantisation would be new
+    weights, which by this repo's rules means a new parity check and a new
+    manifest entry — a separate phase, not a silently-accepted argument here.
+
+    server_hardware is mandatory. The sweep runs on the Mac, so
+    client.py's own get_hardware_info() will (correctly) stamp "Apple M5 Pro"
+    onto every row this arm produces; without the serving side recorded
+    alongside it, a cloud row and a local row are indistinguishable in the
+    saved data. Missing VLLM_CUDA_GPU_NAME raises rather than defaulting to
+    None, for the same reason require_capstone_repo() raises rather than
+    guessing a path.
+    """
+    if model_variant != "bf16":
+        raise ValueError(
+            f"vllm_cuda only serves 'bf16', got {model_variant!r}. The 4bit/8bit "
+            "variants are MLX affine-quantised and cannot be loaded by vLLM on CUDA — "
+            "see this function's docstring."
+        )
+    if settings is None:
+        from forge.config import get_settings
+
+        settings = get_settings()
+
+    if not settings.vllm_cuda_base_url:
+        raise RuntimeError(
+            "VLLM_CUDA_BASE_URL is not set. Point it at the remote vLLM server as "
+            "reachable from this machine — an SSH-forwarded local port in the "
+            "documented setup, e.g. http://127.0.0.1:8001/v1. See .env.example and "
+            "docs/cloud-arm.md."
+        )
+    if not settings.vllm_cuda_gpu_name:
+        raise RuntimeError(
+            "VLLM_CUDA_GPU_NAME is not set. This arm serves from another machine, so "
+            "the result rows cannot say what hardware produced them unless you say so "
+            "here — run `nvidia-smi --query-gpu=name --format=csv,noheader` on the VM. "
+            "See hardware.ServerHardware and docs/cloud-arm.md."
+        )
+
+    return ArmConfig(
+        name="vllm_cuda",
+        model_variant=model_variant,
+        base_url=settings.vllm_cuda_base_url,
+        model_id=settings.vllm_cuda_model_id or "forge-bf16",
+        api_key=settings.vllm_cuda_api_key,
+        launch_command=None,
+        server_hardware=ServerHardware(
+            accelerator=settings.vllm_cuda_gpu_name,
+            provider=settings.vllm_cuda_provider,
+            instance_type=settings.vllm_cuda_instance_type,
+            region=settings.vllm_cuda_region,
+            accelerator_memory_gb=settings.vllm_cuda_gpu_memory_gb,
+            memory_bandwidth_gb_s=settings.vllm_cuda_gpu_memory_bandwidth_gb_s,
+            hourly_usd=settings.vllm_cuda_hourly_usd,
+        ),
     )
 
 

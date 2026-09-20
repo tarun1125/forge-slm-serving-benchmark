@@ -56,6 +56,11 @@ python -m forge.phase2.score_accuracy                           # execution-accu
 Results land in `results/sweep/` (gitignored — regenerate from the harness) and get logged to
 MLflow (`sqlite:///mlflow.db`, also gitignored).
 
+A fifth arm, `vllm_cuda`, is wired and unit-tested but **has never been run** — it needs a rented
+NVIDIA GPU. No cloud numbers exist anywhere in this repo. See
+[docs/cloud-arm.md](docs/cloud-arm.md) for its design decisions and for the local dry-run
+procedure that verifies it without a cloud account.
+
 ## Phase 3 — cost model
 
 ```bash
