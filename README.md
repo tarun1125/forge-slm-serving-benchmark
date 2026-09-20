@@ -76,8 +76,15 @@ script itself.
 
 ```bash
 python -m forge.phase4.upload_model                              # -> new HF Hub model repo (needs HF_TOKEN/HF_USERNAME in .env)
+python -m forge.phase4.upload_fused_bf16 --dry-run               # verify the bf16 checkpoint, upload nothing
+python -m forge.phase4.upload_fused_bf16                         # -> PRIVATE HF repo, so a cloud GPU can pull the bf16 weights
 pip install -r space/requirements.txt && python space/app.py     # Gradio demo, runs locally
 ```
+
+Both upload scripts are outward-facing and run only when you run them. `upload_model` publishes the
+Q4_K_M GGUF the demo serves; `upload_fused_bf16` moves the bf16 safetensors the `vllm_cuda` arm needs
+to a private repo, and refuses unless the directory still hashes to what `models/MANIFEST.json`
+recorded and every file vLLM needs is present.
 
 The demo isn't deployed as a live Hugging Face Space — hosting a Gradio Space on free CPU
 now requires HF PRO, which this project isn't paying for. See `space/README.md`.
