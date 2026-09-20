@@ -6,6 +6,7 @@ this machine's actual installs, not assumed:
   - vllm_metal:  `vllm serve <model>` — standard vLLM OpenAI-compatible server.
   - vllm_cuda:   the same `vllm serve`, on a rented NVIDIA GPU — this
                  process never launches it, it only points at it.
+  - ollama_cloud: the same Ollama daemon as the local arm, on a rented CPU.
   - hosted_api:  Groq and NVIDIA NIM are OpenAI-compatible by design.
 One client (client.py) therefore serves every arm; ArmConfig is the only
 thing that differs per arm.
@@ -56,7 +57,7 @@ VLLM_METAL_MODEL_VARIANTS = MLX_MODEL_VARIANTS
 
 @dataclass(frozen=True)
 class ArmConfig:
-    name: str  # "mlx_lm" | "ollama" | "vllm_metal" | "vllm_cuda" | "hosted_api"
+    name: str  # "mlx_lm" | "ollama" | "vllm_metal" | "vllm_cuda" | "ollama_cloud" | "hosted_api"
     model_variant: str  # e.g. "bf16", "q4", "groq-llama-70b" — arm-specific label
     base_url: str
     model_id: str  # the string sent as `model` in the chat-completions request
@@ -138,18 +139,76 @@ def vllm_metal_arm(
     )
 
 
+def _remote_arm(
+    *,
+    name: str,
+    model_variant: str,
+    model_id: str,
+    base_url: str | None,
+    processor: str | None,
+    base_url_env: str,
+    processor_env: str,
+    processor_probe: str,
+    api_key: str | None = None,
+    provider: str | None = None,
+    instance_type: str | None = None,
+    region: str | None = None,
+    processor_memory_gb: float | None = None,
+    memory_bandwidth_gb_s: float | None = None,
+    hourly_usd: float | None = None,
+) -> ArmConfig:
+    """The shape every arm shares when it serves from a machine this process
+    can only reach over a socket. Factored out because both remote arms need
+    the identical pair of refusals, and a near-copy of a guard is how the two
+    copies drift.
+
+    launch_command is always None here: the server is already running
+    somewhere else, so ManagedServer treats these exactly as it treats Ollama
+    and the hosted API — a no-op start and stop. That also means nothing
+    health-checks the endpoint before a sweep starts. Curl base_url +
+    "/models" yourself first; a dead tunnel otherwise produces a completed run
+    of failed rows rather than an error.
+
+    Both refusals exist for the same reason. A missing base URL fails fast
+    instead of at the first request; a missing processor name would produce
+    rows that cannot say what hardware made them, on a machine that is about
+    to be deleted. See hardware.ServerHardware.
+    """
+    if not base_url:
+        raise RuntimeError(
+            f"{base_url_env} is not set. Point it at the remote server as reachable from "
+            "THIS machine — an SSH-forwarded local port in the documented setup, e.g. "
+            "http://127.0.0.1:8001/v1. See .env.example and docs/cloud-arm.md."
+        )
+    if not processor:
+        raise RuntimeError(
+            f"{processor_env} is not set. This arm serves from another machine, so the "
+            "result rows cannot say what hardware produced them unless you say so here — "
+            f"run `{processor_probe}` on the VM. See hardware.ServerHardware and "
+            "docs/cloud-arm.md."
+        )
+    return ArmConfig(
+        name=name,
+        model_variant=model_variant,
+        base_url=base_url,
+        model_id=model_id,
+        api_key=api_key,
+        launch_command=None,
+        server_hardware=ServerHardware(
+            processor=processor,
+            provider=provider,
+            instance_type=instance_type,
+            region=region,
+            processor_memory_gb=processor_memory_gb,
+            memory_bandwidth_gb_s=memory_bandwidth_gb_s,
+            hourly_usd=hourly_usd,
+        ),
+    )
+
+
 def vllm_cuda_arm(model_variant: str, settings: Settings | None = None) -> ArmConfig:
     """The cloud-GPU arm — the fifth arm the plan called for and Phase 3 has
     so far only estimated (see docs/cost-model.md's scaling-factor row).
-
-    Three things make this different from vllm_metal_arm even though both
-    run the same `vllm serve`:
-
-    launch_command is None. The server is already running on a rented VM,
-    so ManagedServer treats this exactly like Ollama or a hosted API: a
-    no-op start/stop. That also means nothing health-checks the endpoint
-    before the sweep starts — curl base_url + "/models" yourself first, or
-    a dead tunnel produces a full run of failed rows rather than an error.
 
     bf16 only, and the caller can't ask for anything else. models/fused-4bit
     and fused-8bit are MLX affine-quantised (see their config.json's
@@ -158,13 +217,8 @@ def vllm_cuda_arm(model_variant: str, settings: Settings | None = None) -> ArmCo
     weights, which by this repo's rules means a new parity check and a new
     manifest entry — a separate phase, not a silently-accepted argument here.
 
-    server_hardware is mandatory. The sweep runs on the Mac, so
-    client.py's own get_hardware_info() will (correctly) stamp "Apple M5 Pro"
-    onto every row this arm produces; without the serving side recorded
-    alongside it, a cloud row and a local row are indistinguishable in the
-    saved data. Missing VLLM_CUDA_GPU_NAME raises rather than defaulting to
-    None, for the same reason require_capstone_repo() raises rather than
-    guessing a path.
+    Everything else about serving from a rented machine — the refusals, the
+    absent launch_command, the mandatory processor label — is in _remote_arm.
     """
     if model_variant != "bf16":
         raise ValueError(
@@ -177,37 +231,73 @@ def vllm_cuda_arm(model_variant: str, settings: Settings | None = None) -> ArmCo
 
         settings = get_settings()
 
-    if not settings.vllm_cuda_base_url:
-        raise RuntimeError(
-            "VLLM_CUDA_BASE_URL is not set. Point it at the remote vLLM server as "
-            "reachable from this machine — an SSH-forwarded local port in the "
-            "documented setup, e.g. http://127.0.0.1:8001/v1. See .env.example and "
-            "docs/cloud-arm.md."
-        )
-    if not settings.vllm_cuda_gpu_name:
-        raise RuntimeError(
-            "VLLM_CUDA_GPU_NAME is not set. This arm serves from another machine, so "
-            "the result rows cannot say what hardware produced them unless you say so "
-            "here — run `nvidia-smi --query-gpu=name --format=csv,noheader` on the VM. "
-            "See hardware.ServerHardware and docs/cloud-arm.md."
-        )
-
-    return ArmConfig(
+    return _remote_arm(
         name="vllm_cuda",
         model_variant=model_variant,
-        base_url=settings.vllm_cuda_base_url,
         model_id=settings.vllm_cuda_model_id or "forge-bf16",
+        base_url=settings.vllm_cuda_base_url,
+        processor=settings.vllm_cuda_gpu_name,
+        base_url_env="VLLM_CUDA_BASE_URL",
+        processor_env="VLLM_CUDA_GPU_NAME",
+        processor_probe="nvidia-smi --query-gpu=name --format=csv,noheader",
         api_key=settings.vllm_cuda_api_key,
-        launch_command=None,
-        server_hardware=ServerHardware(
-            accelerator=settings.vllm_cuda_gpu_name,
-            provider=settings.vllm_cuda_provider,
-            instance_type=settings.vllm_cuda_instance_type,
-            region=settings.vllm_cuda_region,
-            accelerator_memory_gb=settings.vllm_cuda_gpu_memory_gb,
-            memory_bandwidth_gb_s=settings.vllm_cuda_gpu_memory_bandwidth_gb_s,
-            hourly_usd=settings.vllm_cuda_hourly_usd,
-        ),
+        provider=settings.vllm_cuda_provider,
+        instance_type=settings.vllm_cuda_instance_type,
+        region=settings.vllm_cuda_region,
+        processor_memory_gb=settings.vllm_cuda_gpu_memory_gb,
+        memory_bandwidth_gb_s=settings.vllm_cuda_gpu_memory_bandwidth_gb_s,
+        hourly_usd=settings.vllm_cuda_hourly_usd,
+    )
+
+
+def ollama_cloud_arm(model_variant: str, settings: Settings | None = None) -> ArmConfig:
+    """The cloud-CPU arm: the same Ollama daemon, the same Modelfile, the same
+    registered tag as ollama_arm above — running on a rented commodity CPU
+    instead of this laptop.
+
+    That sameness is the entire design. Holding the serving software constant
+    means the only variable between an `ollama` row and an `ollama_cloud` row
+    is the hardware, which is a far cleaner comparison than swapping stack and
+    machine at once. It is also why this needs its own arm NAME rather than
+    being ollama_arm with a different base_url: sweep.py writes results to
+    f"{arm}_{variant}_c{n}_{bucket}.jsonl", so reusing "ollama" would have the
+    cloud run silently OVERWRITE the local results in results/sweep/, and
+    score_accuracy.py groups by (arm, variant, bucket) and would merge the two
+    populations into one number.
+
+    Needs no GPU quota and no Pay-As-You-Go upgrade, which is why this is the
+    arm to run first — see docs/cloud-arm.md on sequencing.
+
+    model_id defaults to the local arm's tag for the same reason: register the
+    GGUF on the VM with the repo's own ollama/Modelfile.q4 and the two arms
+    are asking the identical daemon for the identical model.
+    """
+    if settings is None:
+        from forge.config import get_settings
+
+        settings = get_settings()
+
+    if model_variant not in OLLAMA_MODEL_VARIANTS:
+        raise ValueError(
+            f"Unknown ollama_cloud variant {model_variant!r} "
+            f"(expected one of {sorted(OLLAMA_MODEL_VARIANTS)})."
+        )
+
+    return _remote_arm(
+        name="ollama_cloud",
+        model_variant=model_variant,
+        model_id=settings.ollama_cloud_model_id or OLLAMA_MODEL_VARIANTS[model_variant],
+        base_url=settings.ollama_cloud_base_url,
+        processor=settings.ollama_cloud_cpu_name,
+        base_url_env="OLLAMA_CLOUD_BASE_URL",
+        processor_env="OLLAMA_CLOUD_CPU_NAME",
+        processor_probe="lscpu | grep 'Model name'",
+        provider=settings.ollama_cloud_provider,
+        instance_type=settings.ollama_cloud_instance_type,
+        region=settings.ollama_cloud_region,
+        processor_memory_gb=settings.ollama_cloud_memory_gb,
+        memory_bandwidth_gb_s=settings.ollama_cloud_memory_bandwidth_gb_s,
+        hourly_usd=settings.ollama_cloud_hourly_usd,
     )
 
 

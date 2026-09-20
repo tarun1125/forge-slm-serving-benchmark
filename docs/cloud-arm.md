@@ -1,4 +1,4 @@
-# The cloud arm (`vllm_cuda`) — design notes and dry-run procedure
+# The cloud arms (`ollama_cloud`, `vllm_cuda`) — design notes and dry-run procedure
 
 The plan's fifth arm — vLLM on a CUDA GPU — was deferred for the obvious
 reason: there is no CUDA hardware here. Phase 3 filled the hole with an
@@ -6,10 +6,25 @@ estimate (`cloud_gpu_throughput_scaling_factor = 2039/307`, the A100/M5 Pro
 memory-bandwidth ratio) and flagged it, everywhere it appears, as the least
 certain number in the cost model.
 
-This document covers the harness work that makes measuring it possible, the
-decisions taken along the way, and how the whole thing was verified without
-renting anything. **No cloud numbers exist yet.** Nothing in `results/` or
-`docs/cost-model.md` has changed; the arm is wired and tested, not run.
+A second cloud arm turned out to matter more in practice. `ollama_cloud` runs
+the *same Ollama daemon, Modelfile and registered tag* as the local `ollama`
+arm on a rented commodity CPU — no GPU quota, no pay-as-you-go upgrade, and it
+adds the price point the cost model is actually missing: commodity cloud CPU
+against unified-memory Apple Silicon against a per-token hosted API.
+
+This document covers the harness work that makes measuring both possible, the
+decisions taken along the way, and how they were verified without renting
+anything. **No cloud numbers exist yet.** Nothing in `results/` or
+`docs/cost-model.md` has changed; the arms are wired and tested, not run.
+
+## Which arm first
+
+`ollama_cloud`. It needs no quota, so it can run on day one while a GPU quota
+request sits in a queue for up to two days — and on Azure it runs while the
+free trial's hard spending limit is still switched on, since that limit only
+disappears when you upgrade to pay-as-you-go to *ask* for GPU quota. Do the CPU
+arm, then upgrade, then the GPU arm. If quota never lands, a four-arm
+comparison with a real cloud CPU curve stands on its own.
 
 ## What it costs to find out
 
@@ -48,6 +63,29 @@ behaviour for a harness that must not abort a two-hour sweep over one dropped
 request, but it means a dead SSH tunnel looks like a finished run. Curl
 `$VLLM_CUDA_BASE_URL/models` before starting, every time.
 
+### One arm name per machine, not per stack
+
+`ollama_cloud` could have been `ollama_arm` with a different `base_url`. It
+isn't, and the reason is not stylistic: `sweep.py` writes results to
+`f"{arm}_{variant}_c{n}_{bucket}.jsonl"`, so a cloud run reusing the name
+`ollama` would **overwrite the local result files in `results/sweep/`**, and
+`score_accuracy.py` groups by `(arm, model_variant, prompt_bucket)` and would
+score the two populations as one. A distinct name is what keeps them separable
+on disk and in the accuracy report. `tests/test_arms.py` asserts both
+properties directly.
+
+Everything else about that arm is deliberately identical to the local one —
+same daemon, same `ollama/Modelfile.q4`, same `forge-qwen-coder-ft:q4` tag, so
+`model_id` defaults to the local arm's. Holding the serving software constant
+means the only variable between the two rows is the hardware, which is a much
+cleaner comparison than swapping stack and machine at once.
+
+One practical note that belongs in the write-up rather than the code: run this
+arm with `--concurrency-levels 1 2 4 8`. Firing 64 concurrent requests at 8
+vCPUs measures queueing, not throughput, and an honest truncated sweep with one
+sentence explaining the ceiling reads far better than a full one whose tail is
+noise.
+
 ### `bf16` only, enforced in the builder
 
 `models/fused-4bit/config.json` and `fused-8bit/config.json` both carry
@@ -61,6 +99,14 @@ accepting the argument and failing later against a server that is billing by
 the second. A CUDA-native quantisation (FP8, AWQ) is possible but produces new
 weights, which under this repo's rules means a new parity check and a new
 `MANIFEST.json` entry — a separate phase, not a quiet widening of this one.
+
+### `processor`, not `accelerator`
+
+The field on `ServerHardware` that names the serving hardware is called
+`processor`. It was `accelerator` until the CPU arm landed and made that a
+small lie — a Graviton4 is not an accelerator, and this is the one field whose
+entire job is to label honestly. `processor_memory_gb` follows the same logic:
+VRAM for a GPU, system RAM for a CPU VM.
 
 ### `server_hardware` is mandatory, and `hardware` is left alone
 
@@ -126,6 +172,29 @@ unloadable variant, the local arms carrying `None`, and the `sweep.py` wiring.
 ```bash
 uv run pytest tests/test_arms.py
 ```
+
+Now 33 tests across both arms, including the two that lock in the name
+separation: arm names are disjoint from the local ones, and the same variant
+produces different result filenames.
+
+### Layer 2 for the CPU arm
+
+Identical shape — any OpenAI-compatible server stands in, and
+`OLLAMA_CLOUD_MODEL_ID` overrides the default tag so the stand-in doesn't need
+the model registered under Ollama's name:
+
+```bash
+OLLAMA_CLOUD_BASE_URL=http://127.0.0.1:8099/v1 \
+OLLAMA_CLOUD_MODEL_ID=models/fused-bf16 \
+OLLAMA_CLOUD_CPU_NAME="DRY RUN - mlx_lm stand-in, not a cloud CPU" \
+uv run python -m forge.phase2.sweep --arms ollama_cloud --skip-thermal \
+  --concurrency-levels 1 --n-repeats 1 --n-warmup 1 --n-per-bucket 1 \
+  --output-dir /tmp/_dryrun_cpu
+```
+
+Verified 20 September 2026: 3 cells, 3 rows, 0 failures, files written as
+`ollama_cloud_q4_c1_*.jsonl` — distinct from `ollama_q4_*`, which is the
+collision the separate arm name exists to prevent.
 
 ### Layer 2 — a real sweep against a local stand-in
 

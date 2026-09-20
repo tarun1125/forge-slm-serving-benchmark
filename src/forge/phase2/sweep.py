@@ -41,7 +41,14 @@ from forge.config import get_settings
 from forge.hardware import assert_native_arm64
 from forge.logging_config import configure_logging, get_logger, start_run
 from forge.phase2 import mlflow_tracking
-from forge.phase2.arms import ArmConfig, mlx_lm_arm, ollama_arm, vllm_cuda_arm, vllm_metal_arm
+from forge.phase2.arms import (
+    ArmConfig,
+    mlx_lm_arm,
+    ollama_arm,
+    ollama_cloud_arm,
+    vllm_cuda_arm,
+    vllm_metal_arm,
+)
 from forge.phase2.client import make_client, run_request
 from forge.phase2.metrics import aggregate
 from forge.phase2.prompts import PromptCase, build_prompt_buckets
@@ -67,10 +74,11 @@ ARM_BUILDERS: dict[str, Callable[[str], ArmConfig]] = {
     "mlx_lm": mlx_lm_arm,
     "ollama": ollama_arm,
     "vllm_metal": vllm_metal_arm,
-    # Reads its endpoint and its serving-hardware provenance from Settings,
-    # so unlike the local builders it takes no port/path arguments — see
-    # arms.vllm_cuda_arm and docs/cloud-arm.md.
+    # The two remote arms read their endpoint and their serving-hardware
+    # provenance from Settings, so unlike the local builders they take no
+    # port/path arguments — see arms._remote_arm and docs/cloud-arm.md.
     "vllm_cuda": vllm_cuda_arm,
+    "ollama_cloud": ollama_cloud_arm,
 }
 
 
@@ -298,6 +306,12 @@ def main() -> None:
         # can't be loaded by vLLM on CUDA at all (arms.vllm_cuda_arm rejects
         # them outright rather than failing later against a live server).
         "vllm_cuda": ["bf16"],
+        # q4 only, but for a softer reason than vllm_cuda's: q8 and f16 would
+        # serve fine on a cloud CPU, they just aren't published anywhere a VM
+        # can pull them from (phase4.upload_model uploads Q4_K_M alone). The
+        # builder accepts any registered variant; widen this list once the
+        # others are on the Hub.
+        "ollama_cloud": ["q4"],
     }
     cells_by_group: dict[tuple[str, str], list[SweepCell]] = {}
     for arm in args.arms:
@@ -305,9 +319,14 @@ def main() -> None:
             # Ollama's own variant names (f16/q8/q4) don't literally appear
             # in the MLX-format MANIFEST.json — only mlx_lm/vllm_metal's
             # bf16/8bit/4bit do, since Ollama serves the separately-tracked
-            # GGUF export. Gate those two arms on the manifest; trust
+            # GGUF export. Gate the MLX-format arms on the manifest; trust
             # ollama_register.py's own success (already verified at
-            # registration time) for the Ollama arm.
+            # registration time) for both Ollama arms. ollama_cloud is
+            # ungated for the same reason as ollama, with one extra caveat
+            # worth knowing: its weights come off the Hub rather than off
+            # this disk, so what the manifest verified and what the VM
+            # actually pulled are only the same file because
+            # phase4.upload_model put it there.
             if (
                 arm in ("mlx_lm", "vllm_metal", "vllm_cuda")
                 and model_variant not in verified_variants
