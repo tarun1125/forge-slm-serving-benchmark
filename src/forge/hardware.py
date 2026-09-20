@@ -40,22 +40,28 @@ class HardwareInfo:
 class ServerHardware:
     """The machine that actually ran inference, when that isn't this one.
 
-    `accelerator` has no default on purpose. Every other field here is
-    genuinely optional metadata, but a remote row with no accelerator name
-    is precisely the artifact this module's docstring calls worthless, so
-    the type refuses to be constructed without one rather than quietly
-    recording a null. memory_bandwidth_gb_s is called out separately from
-    the rest because it is the independent variable in Phase 3's cloud
-    scaling factor (see cost_model.cloud_gpu_cost_per_query) — capturing it
-    per-row is what lets a later analysis test that factor instead of
-    assuming it.
+    `processor`, not `accelerator`: a cloud CPU arm serving GGUF through
+    Ollama has no accelerator, and calling a Graviton4 one would be a small
+    lie in a field whose entire job is to label honestly. It covers whatever
+    actually ran the model — a GPU, or the CPU itself.
+
+    It has no default, on purpose. Every other field here is genuinely
+    optional metadata, but a remote row with no processor name is precisely
+    the artifact this module's docstring calls worthless, so the type refuses
+    to be constructed without one rather than quietly recording a null.
+    memory_bandwidth_gb_s is called out separately from the rest because it
+    is the independent variable in Phase 3's cloud scaling factor (see
+    cost_model.cloud_gpu_cost_per_query) — capturing it per-row is what lets
+    a later analysis test that factor instead of assuming it.
     """
 
-    accelerator: str  # "Tesla T4", "NVIDIA A100 80GB PCIe", "AWS Graviton4"
+    processor: str  # "NVIDIA A100 80GB PCIe", "Tesla T4", "AWS Graviton4"
     provider: str | None = None  # "azure" | "aws"
     instance_type: str | None = None  # "Standard_NC4as_T4_v3", "c8g.2xlarge"
     region: str | None = None
-    accelerator_memory_gb: float | None = None
+    # VRAM for a GPU, system RAM for a CPU VM — the memory the processor
+    # above is actually working out of.
+    processor_memory_gb: float | None = None
     memory_bandwidth_gb_s: float | None = None
     hourly_usd: float | None = None
 

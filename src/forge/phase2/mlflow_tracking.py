@@ -58,11 +58,11 @@ def sweep_cell_run(
                 "forge.run_id": run_id,
                 "forge.arm": arm,
                 # The CLIENT's chip. For a remote arm that is not what ran
-                # the model, which is why forge.accelerator is tagged too
+                # the model, which is why forge.processor is tagged too
                 # rather than this being quietly reinterpreted.
                 "forge.chip": get_hardware_dict()["chip"],
                 **(
-                    {"forge.accelerator": server_hardware.accelerator}
+                    {"forge.processor": server_hardware.processor}
                     if server_hardware is not None
                     else {}
                 ),

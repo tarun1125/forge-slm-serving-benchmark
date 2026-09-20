@@ -42,9 +42,23 @@ class Settings(BaseSettings):
     vllm_cuda_provider: str | None = None
     vllm_cuda_instance_type: str | None = None
     vllm_cuda_region: str | None = None
-    vllm_cuda_gpu_memory_gb: float | None = None
+    vllm_cuda_gpu_memory_gb: float | None = None  # -> ServerHardware.processor_memory_gb
     vllm_cuda_gpu_memory_bandwidth_gb_s: float | None = None
     vllm_cuda_hourly_usd: float | None = None
+
+    # --- Phase 2, arm 6: Ollama on a rented cloud CPU ---
+    # The same daemon, Modelfile and tag as the local `ollama` arm, on
+    # commodity cloud CPU instead of Apple Silicon. Needs no GPU quota, which
+    # is why it is the arm to run first — see docs/cloud-arm.md.
+    ollama_cloud_base_url: str | None = None
+    ollama_cloud_model_id: str | None = None
+    ollama_cloud_cpu_name: str | None = None
+    ollama_cloud_provider: str | None = None
+    ollama_cloud_instance_type: str | None = None
+    ollama_cloud_region: str | None = None
+    ollama_cloud_memory_gb: float | None = None
+    ollama_cloud_memory_bandwidth_gb_s: float | None = None
+    ollama_cloud_hourly_usd: float | None = None
 
     # --- Phase 4: HF Hub model upload + Space deploy ---
     hf_token: str | None = None
