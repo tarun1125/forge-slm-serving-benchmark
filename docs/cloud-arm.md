@@ -172,6 +172,56 @@ each cell reports `n_failed: 1`, rows carry `error: "Connection error."`, and
 scenario, and confirming what it looks like in the data is the point —
 otherwise you cannot tell it apart from a finished run.
 
+## Getting the weights to the VM
+
+`models/fused-bf16` is 2.9 GB and gitignored, and it is the only artifact in
+`models/` that vLLM on CUDA can load. `forge.phase4.upload_fused_bf16` moves it
+to a **private** Hugging Face repo, after which every VM you ever build pulls it
+at datacentre speed. Cloud ingress is free on both Azure and AWS, so the 2.9 GB
+goes up your home connection exactly once.
+
+```bash
+python -m forge.phase4.upload_fused_bf16 --dry-run   # both guards, no network, no token
+python -m forge.phase4.upload_fused_bf16
+```
+
+Private by default, unlike `upload_model.py`. That module publishes the demo's
+GGUF deliberately; this one exists to move weights onto a machine you rented,
+and a 3 GB fine-tune should not become public because a default was convenient.
+`--public` overrides.
+
+Two guards run first, and both refuse rather than warn:
+
+**The directory must still be the artifact Phase 1 verified.** It is hashed with
+`artifact_hash.hash_directory` and compared to `models/MANIFEST.json`, and the
+manifest's parity check must have passed. This is the same promise
+`sweep.py`'s `load_verified_variants()` makes locally, applied at the moment the
+artifact leaves this machine — uploading a drifted checkpoint would put
+unverified weights on a GPU and produce numbers that look real. Note that the
+hash is path-sensitive, so a stray file in the directory counts as drift; that
+is why the generated model card is written to a temp name and removed even on
+failure.
+
+**Every file vLLM needs must be present**, `chat_template.jinja` above all.
+`models/fused-bf16/tokenizer_config.json` has no `chat_template` key — checked,
+not assumed — so the template exists only in that sibling file. A repo missing
+it serves a model that formats prompts differently from every other arm, and the
+failure is silent: the server starts, answers, and scores near zero for reasons
+that look like a model problem.
+
+The generated model card records the adapter hash, the parity-check result, the
+directory hash, and a per-file SHA-256 table, so the published repo can be
+verified file-by-file rather than trusted. It also documents `--chat-template`
+and the Turing `--dtype float16` caveat, because the person who needs those
+warnings is whoever is reading the repo on the VM at the time.
+
+Then, on the VM:
+
+```bash
+hf auth login                                                  # a read token; the repo is private
+hf download <you>/forge-qwen2.5-coder-1.5b-mongodb-bf16 --local-dir ~/models/fused-bf16
+```
+
 ## After a real run, these stop being true
 
 Six places currently state that this arm was never measured. Measuring it and
