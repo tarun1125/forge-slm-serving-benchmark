@@ -15,11 +15,19 @@ number. See [docs/write-up.md](docs/write-up.md) for the full write-up.
 
 ## Status
 
-Phase 0 (environment), Phase 1 (model prep), Phase 2 (benchmark harness + sweep), and Phase 3
-(cost model) are done. Phase 4 (deployment: HF Hub model, Gradio demo, vllm-metal upstream
-contribution) is done except for a live hosted demo, which needs a Hugging Face PRO
-subscription this project isn't paying for — see `space/README.md`. Phase 5 (notebook, plots,
-failure gallery, write-up) is in progress.
+Phases 0-5 are done: environment, model prep, the benchmark harness and sweep, the cost model,
+deployment, and the analysis notebook / failure gallery / write-up. Two things are deliberately
+missing, and both are documented rather than quietly dropped:
+
+- **No live hosted demo.** The Gradio app runs locally. Hosting it on a free-CPU Hugging Face
+  Space now requires HF PRO, which this project isn't paying for — see `space/README.md`.
+- **No cloud numbers, anywhere.** Two cloud arms — `ollama_cloud` (commodity CPU) and
+  `vllm_cuda` (a rented NVIDIA GPU) — are wired, unit-tested and verified end-to-end against a
+  local stand-in server, but have never been run against a cloud machine. The cost model's
+  cloud-GPU throughput figure is therefore still the extrapolation it always was, flagged as
+  such everywhere it appears. See [docs/cloud-arm.md](docs/cloud-arm.md) for the design
+  decisions, the sequencing, and the dry-run procedure that verifies both arms without a cloud
+  account.
 
 ## Setup
 
