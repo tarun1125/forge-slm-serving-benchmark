@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -40,7 +41,7 @@ from forge.config import get_settings
 from forge.hardware import assert_native_arm64
 from forge.logging_config import configure_logging, get_logger, start_run
 from forge.phase2 import mlflow_tracking
-from forge.phase2.arms import ArmConfig, mlx_lm_arm, ollama_arm, vllm_metal_arm
+from forge.phase2.arms import ArmConfig, mlx_lm_arm, ollama_arm, vllm_cuda_arm, vllm_metal_arm
 from forge.phase2.client import make_client, run_request
 from forge.phase2.metrics import aggregate
 from forge.phase2.prompts import PromptCase, build_prompt_buckets
@@ -56,10 +57,20 @@ DEFAULT_N_WARMUP = 1  # per the plan: "Warm-up requests discarded before measure
 DEFAULT_MAX_TOKENS = 300
 DEFAULT_N_PER_BUCKET = 10
 
-ARM_BUILDERS = {
+# Annotated, not inferred: each builder has its own extra keyword arguments
+# (ports for the local ones, Settings for vllm_cuda), so the inferred value
+# type is their useless join. What build_arm_config() actually depends on is
+# the one signature they all share — a variant name in, an ArmConfig out — and
+# stating it keeps a future builder that breaks that contract a type error
+# here rather than a runtime one mid-sweep.
+ARM_BUILDERS: dict[str, Callable[[str], ArmConfig]] = {
     "mlx_lm": mlx_lm_arm,
     "ollama": ollama_arm,
     "vllm_metal": vllm_metal_arm,
+    # Reads its endpoint and its serving-hardware provenance from Settings,
+    # so unlike the local builders it takes no port/path arguments — see
+    # arms.vllm_cuda_arm and docs/cloud-arm.md.
+    "vllm_cuda": vllm_cuda_arm,
 }
 
 
@@ -215,6 +226,7 @@ async def run_sweep(
                             cell.model_variant,
                             cell.concurrency,
                             cell.prompt_bucket,
+                            server_hardware=arm_config.server_hardware,
                         ):
                             mlflow_tracking.log_arm_metrics(metrics)
                             mlflow_tracking.log_raw_results(results)
@@ -282,6 +294,10 @@ def main() -> None:
         "mlx_lm": ["bf16", "8bit", "4bit"],
         "vllm_metal": ["bf16", "8bit", "4bit"],
         "ollama": ["f16", "q8", "q4"],
+        # One cell wide, deliberately: the MLX-quantised 4bit/8bit variants
+        # can't be loaded by vLLM on CUDA at all (arms.vllm_cuda_arm rejects
+        # them outright rather than failing later against a live server).
+        "vllm_cuda": ["bf16"],
     }
     cells_by_group: dict[tuple[str, str], list[SweepCell]] = {}
     for arm in args.arms:
@@ -292,7 +308,10 @@ def main() -> None:
             # GGUF export. Gate those two arms on the manifest; trust
             # ollama_register.py's own success (already verified at
             # registration time) for the Ollama arm.
-            if arm in ("mlx_lm", "vllm_metal") and model_variant not in verified_variants:
+            if (
+                arm in ("mlx_lm", "vllm_metal", "vllm_cuda")
+                and model_variant not in verified_variants
+            ):
                 log.warning(
                     "sweep.skipping_unverified_variant", arm=arm, model_variant=model_variant
                 )

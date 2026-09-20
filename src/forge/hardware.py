@@ -6,6 +6,16 @@ means nothing without the chip it was measured on, since Apple Silicon
 generations differ enough in memory bandwidth and GPU core count to move the
 result on their own. An unlabelled number is worthless — this module is the
 single place that fingerprint gets produced so every artifact agrees.
+
+Two fingerprints, not one. HardwareInfo describes THIS machine, which for
+every local arm is also the machine that served the request. That stops being
+true the moment an arm points at a remote server: the sweep still runs here,
+so HardwareInfo still (correctly) says "Apple M5 Pro", but the inference
+happened on something else entirely. ServerHardware is that other machine,
+and it is None for exactly the arms where the client IS the server. Without
+it a cloud row is indistinguishable from a local one in the saved data —
+same arm code, same client fingerprint, different silicon — which is the
+unlabelled-number failure this module exists to prevent.
 """
 
 from __future__ import annotations
@@ -24,6 +34,30 @@ class HardwareInfo:
     cpu_core_count: int
     gpu_core_count: int | None
     unified_memory_gb: float | None
+
+
+@dataclass(frozen=True)
+class ServerHardware:
+    """The machine that actually ran inference, when that isn't this one.
+
+    `accelerator` has no default on purpose. Every other field here is
+    genuinely optional metadata, but a remote row with no accelerator name
+    is precisely the artifact this module's docstring calls worthless, so
+    the type refuses to be constructed without one rather than quietly
+    recording a null. memory_bandwidth_gb_s is called out separately from
+    the rest because it is the independent variable in Phase 3's cloud
+    scaling factor (see cost_model.cloud_gpu_cost_per_query) — capturing it
+    per-row is what lets a later analysis test that factor instead of
+    assuming it.
+    """
+
+    accelerator: str  # "Tesla T4", "NVIDIA A100 80GB PCIe", "AWS Graviton4"
+    provider: str | None = None  # "azure" | "aws"
+    instance_type: str | None = None  # "Standard_NC4as_T4_v3", "c8g.2xlarge"
+    region: str | None = None
+    accelerator_memory_gb: float | None = None
+    memory_bandwidth_gb_s: float | None = None
+    hourly_usd: float | None = None
 
 
 def _sysctl(name: str) -> str | None:

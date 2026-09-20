@@ -25,6 +25,27 @@ class Settings(BaseSettings):
     groq_api_key: str | None = None
     nim_api_key: str | None = None
 
+    # --- Phase 2, arm 5: vLLM on a rented CUDA GPU ---
+    # Read here rather than from os.environ in arms.py, per this module's
+    # own convention — see hosted_api_arm()'s docstring for the bug that
+    # rule exists because of. base_url points at wherever the remote server
+    # is reachable from THIS machine, which in the documented setup is an
+    # SSH-forwarded local port, not a public address (see docs/cloud-arm.md).
+    vllm_cuda_base_url: str | None = None
+    vllm_cuda_model_id: str | None = None
+    vllm_cuda_api_key: str | None = None
+    # Provenance for the machine that actually serves. Not optional in
+    # practice: vllm_cuda_arm() refuses to build an arm without an
+    # accelerator name, because a remote result row that can't say what ran
+    # it is the exact artifact hardware.py calls worthless.
+    vllm_cuda_gpu_name: str | None = None
+    vllm_cuda_provider: str | None = None
+    vllm_cuda_instance_type: str | None = None
+    vllm_cuda_region: str | None = None
+    vllm_cuda_gpu_memory_gb: float | None = None
+    vllm_cuda_gpu_memory_bandwidth_gb_s: float | None = None
+    vllm_cuda_hourly_usd: float | None = None
+
     # --- Phase 4: HF Hub model upload + Space deploy ---
     hf_token: str | None = None
     hf_username: str | None = None

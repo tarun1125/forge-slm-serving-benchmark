@@ -16,12 +16,13 @@ import json
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import asdict
 from pathlib import Path
 
 import mlflow
 
 from forge.config import get_settings
-from forge.hardware import get_hardware_dict
+from forge.hardware import ServerHardware, get_hardware_dict
 from forge.logging_config import get_logger
 from forge.phase2.metrics import ArmMetrics
 from forge.phase2.result_schema import RequestResult
@@ -39,7 +40,12 @@ def configure_tracking() -> None:
 
 @contextmanager
 def sweep_cell_run(
-    run_id: str, arm: str, model_variant: str, concurrency: int, prompt_bucket: str
+    run_id: str,
+    arm: str,
+    model_variant: str,
+    concurrency: int,
+    prompt_bucket: str,
+    server_hardware: ServerHardware | None = None,
 ) -> Iterator[None]:
     """One MLflow run per (arm, model_variant, concurrency, prompt_bucket)
     cell — matches metrics.aggregate()'s own grouping exactly, so a run's
@@ -51,7 +57,15 @@ def sweep_cell_run(
             {
                 "forge.run_id": run_id,
                 "forge.arm": arm,
+                # The CLIENT's chip. For a remote arm that is not what ran
+                # the model, which is why forge.accelerator is tagged too
+                # rather than this being quietly reinterpreted.
                 "forge.chip": get_hardware_dict()["chip"],
+                **(
+                    {"forge.accelerator": server_hardware.accelerator}
+                    if server_hardware is not None
+                    else {}
+                ),
             }
         )
         mlflow.log_params(
@@ -61,6 +75,15 @@ def sweep_cell_run(
                 "concurrency": concurrency,
                 "prompt_bucket": prompt_bucket,
                 **{f"hardware.{k}": v for k, v in get_hardware_dict().items()},
+                **(
+                    {
+                        f"server_hardware.{k}": v
+                        for k, v in asdict(server_hardware).items()
+                        if v is not None
+                    }
+                    if server_hardware is not None
+                    else {}
+                ),
             }
         )
         yield

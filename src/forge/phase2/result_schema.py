@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from forge.hardware import HardwareInfo
+from forge.hardware import HardwareInfo, ServerHardware
 
 
 class RequestResult(BaseModel):
@@ -53,6 +53,12 @@ class RequestResult(BaseModel):
     peak_memory_mb: float | None = None
 
     hardware: HardwareInfo
+    # The machine that SERVED this request, when that isn't the machine that
+    # measured it. None for every local arm, where the two are the same
+    # machine and `hardware` above already says so. Populated from
+    # ArmConfig.server_hardware — see hardware.ServerHardware for why a
+    # remote row without this is treated as a defect rather than a gap.
+    server_hardware: ServerHardware | None = None
 
     @property
     def succeeded(self) -> bool:

@@ -137,4 +137,7 @@ async def run_request(
         generated_text="".join(generated_parts) or None,
         error=error,
         hardware=hardware or get_hardware_info(),
+        # Copied straight off the arm, not detected: this process cannot
+        # introspect a machine it only holds a URL for. None for local arms.
+        server_hardware=arm_config.server_hardware,
     )
