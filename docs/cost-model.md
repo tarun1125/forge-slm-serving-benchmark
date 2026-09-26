@@ -34,19 +34,23 @@ qualitative story, since idle-power draw is a small fraction of active-inference
 
 | Arm | Variant | Throughput (tok/s) | Accuracy | Cost/query @ 10k/mo | Break-even (queries/mo) | Cost per accuracy point |
 |---|---|---|---|---|---|---|
-| mlx_lm | bf16 | 69.8 | 36.4% | ₹0.6943 | 300,000 | ₹1.9093 |
-| mlx_lm | 8bit | 110.6 | 25.0% | ₹0.6942 | 300,000 | ₹2.7770 |
-| mlx_lm | 4bit | 154.9 | 33.3% | ₹0.6942 | 300,000 | ₹2.0827 |
+| mlx_lm | bf16 | 69.8 | 40.0% | ₹0.6943 | 300,000 | ₹1.7357 |
+| mlx_lm | 8bit | 110.6 | 30.0% | ₹0.6942 | 300,000 | ₹2.3141 |
+| mlx_lm | 4bit | 154.9 | 40.0% | ₹0.6942 | 300,000 | ₹1.7356 |
 | ollama | f16 | 76.8 | 40.0% | ₹0.6943 | 300,000 | ₹1.7357 |
 | ollama | q8 | 113.4 | 40.0% | ₹0.6942 | 300,000 | ₹1.7356 |
 | ollama | q4 | 151.7 | 50.0% | ₹0.6942 | 300,000 | ₹1.3884 |
-| vllm_metal | bf16 | 148.9 | 36.4% | ₹0.6942 | 300,000 | ₹1.9091 |
-| vllm_metal | 8bit | 330.6 | 30.8% | ₹0.6942 | 300,000 | ₹2.2561 |
-| vllm_metal | 4bit | 459.8 | 35.7% | ₹0.6942 | 300,000 | ₹1.9437 |
+| vllm_metal | bf16 | 148.9 | 35.6% | ₹0.6942 | 300,000 | ₹1.9525 |
+| vllm_metal | 8bit | 330.6 | 36.7% | ₹0.6942 | 300,000 | ₹1.8932 |
+| vllm_metal | 4bit | 459.8 | 43.3% | ₹0.6942 | 300,000 | ₹1.6020 |
 
 ## Cloud VMs — measured on rented hardware
 
-Not measured yet. Run the `ollama_cloud` (CPU) or `vllm_cuda` (GPU) arm — see `docs/cloud-arm.md` — and re-run this script; this section and its curves fill in from the result rows.
+`ollama_cloud` is the same Ollama daemon, Modelfile and GGUF as the local `ollama` arm on a rented CPU; `vllm_cuda` is vLLM serving the bf16 checkpoint on a rented GPU. Priced as an **always-on** VM at the hourly rate recorded on the result rows: cost per query falls as 1/volume until one VM is saturated, then scales out in whole VMs. Throughput is measured from the Mac across an SSH tunnel; the round trip lands in TTFT, not materially in tokens/sec. No scaling factor — unlike the estimated cloud-GPU row in the assumptions table, nothing here is extrapolated.
+
+| Arm | Variant | Machine | $/hour | Serving stack | Throughput (tok/s) | Failed | Accuracy | Cost/query @ 10k/mo | Break-even (queries/mo) | VMs @ 1,000,000/mo |
+|---|---|---|---|---|---|---|---|---|---|---|
+| ollama_cloud | q4 | Neoverse-N2 · Standard_D4ps_v6 · centralindia | $0.0924 | ollama 0.32.14 | 18.2 | 0/24 | 50.0% | ₹0.5936 | 300,000 | 2 |
 
 **Hosted API (Groq, gpt-oss-120b):** ₹0.0382/query flat (no utilization dependence), 66.7% accuracy on a real 15-case sample (avg 1469 prompt + 356 completion tokens — completion includes hidden reasoning-model tokens, confirmed live: at max_tokens=300 the model silently burned its entire budget on invisible reasoning on 4 of 15 real requests and returned no visible output at all).
 
