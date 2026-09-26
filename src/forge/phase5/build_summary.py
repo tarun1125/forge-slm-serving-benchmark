@@ -19,6 +19,7 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import json
 from dataclasses import asdict
 from pathlib import Path
@@ -67,8 +68,19 @@ def load_accuracy_lookup(path: Path) -> dict[tuple[str, str, str], float]:
     return lookup
 
 
-def build_summary(sweep_dir: Path, accuracy_path: Path) -> list[dict]:
+LOCAL_ARMS = ("mlx_lm", "ollama", "vllm_metal")
+
+
+def build_summary(
+    sweep_dir: Path, accuracy_path: Path, arms: tuple[str, ...] | None = None
+) -> list[dict]:
+    """arms=None keeps every arm found. The notebook averages every
+    concurrency-1 row in sweep_summary.json into its local headline, so that
+    file is built with arms=LOCAL_ARMS — otherwise a cloud CPU's 13-second
+    TTFT would be averaged into the Mac's numbers silently."""
     results = load_all_results(sweep_dir)
+    if arms is not None:
+        results = [r for r in results if r.arm in arms]
     if not results:
         raise RuntimeError(
             f"No sweep results found under {sweep_dir} — run forge.phase2.sweep first."
@@ -88,19 +100,36 @@ def build_summary(sweep_dir: Path, accuracy_path: Path) -> list[dict]:
 
 def main() -> None:
     configure_logging()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--sweep-dir", type=Path, default=SWEEP_DIR)
+    parser.add_argument("--output", type=Path, default=OUTPUT_PATH)
+    parser.add_argument(
+        "--accuracy-path",
+        type=Path,
+        default=ACCURACY_PATH,
+        help="A missing file attaches no accuracy — right for a --bust-prompt-cache run, "
+        "whose nonce-perturbed prompts are not what accuracy was scored on.",
+    )
+    parser.add_argument(
+        "--arms",
+        nargs="+",
+        default=list(LOCAL_ARMS),
+        help="Arms to include (default: the three local ones — see build_summary).",
+    )
+    args = parser.parse_args()
     run_id = start_run(log, phase="phase5.build_summary")
 
-    rows = build_summary(SWEEP_DIR, ACCURACY_PATH)
-    OUTPUT_PATH.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    rows = build_summary(args.sweep_dir, args.accuracy_path, tuple(args.arms))
+    args.output.write_text(json.dumps(rows, indent=2), encoding="utf-8")
 
     log.info(
         "run.finish",
         run_id=run_id,
         phase="phase5.build_summary",
-        output_path=str(OUTPUT_PATH),
+        output_path=str(args.output),
         n_cells=len(rows),
     )
-    print(f"Wrote {len(rows)} cells to {OUTPUT_PATH}")
+    print(f"Wrote {len(rows)} cells to {args.output}")
 
 
 if __name__ == "__main__":

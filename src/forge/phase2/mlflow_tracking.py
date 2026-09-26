@@ -167,6 +167,10 @@ def log_thermal_flag(cooled_down: bool | None) -> None:
     )
 
 
+def log_param(key: str, value: object) -> None:
+    mlflow.log_param(key, value)
+
+
 def log_manifest_reference(manifest_path: Path) -> None:
     """Logs models/MANIFEST.json's content as a param snapshot, so a run
     is traceable back to exactly which model artifact hash it benchmarked

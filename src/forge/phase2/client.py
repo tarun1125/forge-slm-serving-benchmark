@@ -51,6 +51,24 @@ DEFAULT_TIMEOUT_S = 120.0
 STOP_SEQUENCES = ["<|im_end|>", "<|endoftext|>"]
 
 
+def with_prompt_nonce(system_prompt: str, nonce: str | None) -> str:
+    """Prefixes the system prompt with a per-request tag, so its token
+    sequence diverges from every other request's at the first system token.
+
+    Why: Ollama (llama.cpp), vLLM and mlx_lm.server all reuse the KV cache for
+    the longest prefix a new prompt shares with an earlier one, and this
+    sweep's prompts share long schema prefixes and repeat across rounds. The
+    published long-bucket TTFT at concurrency 1 (~0.1 s for ~5k tokens on the
+    Mac) was therefore a cache hit, not a prefill. At the START is the only
+    placement that works — a tag anywhere later leaves the shared prefix
+    before it cacheable. The cost is ~10 extra prompt tokens and a slightly
+    perturbed prompt, which is why accuracy is scored from the normal sweep,
+    not from a cache-busted one."""
+    if nonce is None:
+        return system_prompt
+    return f"[request {nonce}]\n{system_prompt}"
+
+
 def make_client(
     arm_config: ArmConfig,
     max_retries: int = DEFAULT_MAX_RETRIES,
@@ -86,6 +104,7 @@ async def run_request(
     question: str,
     max_tokens: int,
     hardware: HardwareInfo | None = None,
+    prompt_nonce: str | None = None,
 ) -> RequestResult:
     start = time.monotonic()
     token_monotonics: list[float] = []
@@ -98,7 +117,7 @@ async def run_request(
         stream = await client.chat.completions.create(
             model=arm_config.model_id,
             messages=[
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": with_prompt_nonce(system_prompt, prompt_nonce)},
                 {"role": "user", "content": question},
             ],
             max_tokens=max_tokens,
@@ -148,6 +167,7 @@ async def run_request(
         completion_tokens=completion_tokens,
         generated_text="".join(generated_parts) or None,
         error=error,
+        prompt_nonce=prompt_nonce,
         hardware=hardware or get_hardware_info(),
         # Copied straight off the arm, not detected: this process cannot
         # introspect a machine it only holds a URL for. None for local arms.

@@ -14,8 +14,10 @@ against unified-memory Apple Silicon against a per-token hosted API.
 
 This document covers the harness work that makes measuring both possible, the
 decisions taken along the way, and how they were verified without renting
-anything. **No cloud numbers exist yet.** Nothing in `results/` or
-`docs/cost-model.md` has changed; the arms are wired and tested, not run.
+anything. **`ollama_cloud` has since been measured** (26 September 2026, Azure
+`Standard_D4ps_v6`, Central India — see the "Cloud VMs" section of
+`docs/cost-model.md` and failure #5 in `docs/failure-gallery.md`).
+**`vllm_cuda` has not**; it is waiting on GPU quota.
 
 ## Which arm first
 
@@ -728,8 +730,10 @@ az group delete -n $RG --yes --no-wait
 
 ## After a real run, these stop being true
 
-Six places currently state that this arm was never measured. Measuring it and
-leaving them is the one thing the write-up is built not to do.
+This table is now about `vllm_cuda` only — the `ollama_cloud` run updated the
+README, write-up and failure gallery on 26 September 2026. These places still
+state that the GPU arm was never measured. Measuring it and leaving them is the
+one thing the write-up is built not to do.
 
 | Where | What says it |
 |---|---|

@@ -39,8 +39,9 @@ From `results/accuracy_by_group.json`: every one of the 9 (arm ×
 quantization) combinations scores **exactly 0.0 execution accuracy on the
 short prompt bucket** — `mlx_lm`/bf16/8bit/4bit, `ollama`/f16/q8/q4,
 `vllm_metal`/bf16/8bit/4bit, all nine, no exceptions. Medium and long
-buckets score 15–50% on the same arms and variants. Quantization barely
-moves the number within a bucket; which bucket a question falls into
+buckets score 19–50% on the same arms and variants. Quantization barely
+moves the number within a bucket (at most one case in ten, in no consistent
+direction); which bucket a question falls into
 determines almost everything.
 
 Root cause, not guessed: the fine-tune was trained exclusively on the full,
@@ -165,6 +166,86 @@ question, same settings, produced different output purely depending on
 which other questions had been asked earlier in the same process. This is
 also how failure #2 above was correctly isolated as the model's real,
 order-independent output rather than an artifact of test ordering.
+
+## 5. What the cloud run exposed about the local numbers
+
+Running the same Ollama, the same GGUF (sha256-verified on the VM) and the same
+daemon settings on a 4-vCPU Azure Cobalt 100 VM was meant to add one row to the
+cost table. It mostly found problems in the rows that were already there.
+
+**Time-to-first-token on long prompts was measuring the prompt cache, not
+prefill.** Ollama (llama.cpp), vLLM and `mlx_lm.server` all reuse the KV cache
+for the longest prefix a new prompt shares with an earlier one, and this
+sweep's prompts share long schema prefixes and repeat across rounds. The
+published local `ollama/q4` long-bucket TTFT at concurrency 1 was **0.09–0.10 s
+for ~5,000-token prompts** — a rate no M5 Pro prefill reaches. On the Mac the
+cache made this invisible. On the CPU VM a miss costs 37–160 s, so the same
+effect split the long bucket into two populations (0.3–1 s hits, 37–160 s
+misses) and produced a nonsense p50 of 77.7 s at concurrency 2 next to 1.05 s at
+concurrency 1.
+
+The fix is a `--bust-prompt-cache` sweep flag: a random per-request tag at the
+*start* of the system prompt, so no two requests share a prefix (placed
+anywhere later, the shared schema before it stays cacheable). Each row records
+its nonce, and the sweep refuses to write a busted run into `results/sweep/`.
+Re-measured cold, `ollama/q4` at concurrency 1:
+
+| | Cached (published) | Cold, Mac | Cold, Azure 4× Neoverse-N2 |
+|---|---|---|---|
+| long TTFT p50 | 0.10 s | 1.29 s | 54.96 s |
+| medium TTFT p50 | 0.12 s | 0.42 s | 13.11 s |
+| ITL p50, long | 6.0 ms | 6.4 ms | 47.9 ms |
+
+ITL does not move — decode never touches the cache question — which is the
+cleanest confirmation that the cache, not noise, is what changed. The cached
+numbers aren't wrong so much as mislabelled: they measure a deployment whose
+requests share one fixed system prompt (the demo is exactly that), not the
+cost of prefill. Both are now reported, labelled.
+
+**`mlx_lm` at concurrency 8 was dropping connections, and retries hid it.**
+The cold re-run used `--max-retries 0` (see below) and `mlx_lm` failed 23 of 216
+measured requests — every one `Connection error.`, every one at concurrency 8,
+all three variants, never at concurrency ≤ 4 and never on vLLM or Ollama. The
+server's own log shows no error: the connections never reached it.
+`mlx_lm.server` is built on the standard library's `ThreadingHTTPServer`,
+whose listen backlog is `socketserver.TCPServer.request_queue_size = 5`;
+eight simultaneous connects while the one Python thread is busy prefilling
+overflow it, and macOS refuses the rest. The published sweep ran the same cells
+with the OpenAI SDK's default 2 retries and reported **zero** failures — so
+those cells most likely contain retried requests whose TTFT silently includes
+the failed attempt and its backoff. Likely, not proven: retries were never
+recorded, which is the other half of the bug.
+
+**Retries were on by default, and they falsify latency.** `run_request` stamps
+the start time before the SDK's first attempt, so a request that failed and
+succeeded on retry reports the retry's delay as TTFT, and the retry re-sends load
+to a server that was already saturated. Retries are now a sweep flag, and every
+cloud and cold run uses `--max-retries 0`: a failed request is an honest
+`n_failed`; a retried one is a wrong number.
+
+**Accuracy averaged over generations, not cases.** `score_accuracy` deduplicated
+`(case_id, generated_text)` pairs and averaged over them, so a case that
+produced two different outputs across concurrency levels counted twice and a
+stable case once — `mlx_lm/4bit/long` scored 13 generations drawn from 10
+cases. Now each case counts once (generations weighted by how many requests
+produced them). Fifteen local groups moved, some a lot: `vllm_metal/4bit/long`
+went from 15.8% to 27.9%. A second bug in the same file: it overwrote its output
+wholesale, so scoring a cloud-only directory would have deleted every local
+group. It now merges.
+
+**The same GGUF gives different answers on different hardware.** Byte-identical
+weights (hash-checked), same Ollama version, temperature 0: medium-bucket
+accuracy matched exactly (50.0% both), but the long bucket scored 22.0% on the
+Azure CPU against 30.0% on the Mac. llama.cpp's CPU and Metal kernels accumulate
+in different orders, and at 4–6k-token prompts the drift is enough to flip some
+greedy decodes. "Deterministic at temperature 0" holds per machine, not across
+machines.
+
+**A dropped SSH tunnel used to look like a finished run.** Remote arms launch
+nothing, so nothing checked the endpoint: a dead tunnel produced a sweep that
+completed, writing rows whose `error` read `Connection error.`. It happened for
+real between the two Azure runs (the idle tunnel died). A preflight now requires
+`/models` to answer and list the model, or the sweep refuses to start.
 
 ## What this gallery is not
 

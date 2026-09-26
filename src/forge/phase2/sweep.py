@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -128,9 +129,14 @@ async def run_cell(
     n_repeats: int = DEFAULT_N_REPEATS,
     n_warmup: int = DEFAULT_N_WARMUP,
     max_tokens: int = DEFAULT_MAX_TOKENS,
+    bust_prompt_cache: bool = False,
 ) -> list[RequestResult]:
     """Fires `concurrency` requests at once per round, cycling through
     prompt_cases; n_warmup rounds are discarded, n_repeats rounds are kept.
+
+    bust_prompt_cache gives every request (warm-up included) a fresh nonce —
+    see client.with_prompt_nonce for why the default run's TTFT isn't a
+    prefill measurement.
     """
     all_results: list[RequestResult] = []
     total_rounds = n_warmup + n_repeats
@@ -151,6 +157,7 @@ async def run_cell(
                 system_prompt=case.system_prompt,
                 question=case.question,
                 max_tokens=max_tokens,
+                prompt_nonce=uuid.uuid4().hex[:16] if bust_prompt_cache else None,
             )
             for case in round_cases
         ]
@@ -173,6 +180,7 @@ async def run_sweep(
     n_warmup: int = DEFAULT_N_WARMUP,
     max_retries: int = DEFAULT_MAX_RETRIES,
     request_timeout_s: float = DEFAULT_TIMEOUT_S,
+    bust_prompt_cache: bool = False,
 ) -> None:
     # No seed here, deliberately: unlike Phase 1's parity-check sampling
     # (which needs the exact same 50 cases reproduced across runs), sweep
@@ -216,6 +224,7 @@ async def run_sweep(
                             run_id,
                             n_repeats=n_repeats,
                             n_warmup=n_warmup,
+                            bust_prompt_cache=bust_prompt_cache,
                         )
                         # Stamped once per cell, not per request: thermal state
                         # doesn't meaningfully change within the seconds-to-tens-
@@ -247,6 +256,7 @@ async def run_sweep(
                             mlflow_tracking.log_arm_metrics(metrics)
                             mlflow_tracking.log_raw_results(results)
                             mlflow_tracking.log_thermal_flag(cooled_down)
+                            mlflow_tracking.log_param("bust_prompt_cache", bust_prompt_cache)
 
                         cell_filename = (
                             f"{cell.arm}_{cell.model_variant}_c{cell.concurrency}_"
@@ -311,11 +321,23 @@ def main() -> None:
         "concurrency >= 4 on the long bucket can exceed the default before the first token.",
     )
     parser.add_argument(
+        "--bust-prompt-cache",
+        action="store_true",
+        help="Prefix every request's system prompt with a random nonce so no server can "
+        "reuse a cached prefix: TTFT then includes a cold prefill. Use a separate "
+        "--output-dir; score accuracy from a normal run. See client.with_prompt_nonce.",
+    )
+    parser.add_argument(
         "--skip-thermal",
         action="store_true",
         help="Skip thermal monitoring/cooldown entirely — needs sudo otherwise.",
     )
     args = parser.parse_args()
+    if args.bust_prompt_cache and args.output_dir.resolve() == Path("results/sweep").resolve():
+        # Same filenames as the published cells: a cold run written here would
+        # overwrite them, and score_accuracy/build_report would read nonce-
+        # perturbed prompts as the real thing.
+        parser.error("--bust-prompt-cache needs its own --output-dir (e.g. results/sweep_cold)")
 
     verified_variants = load_verified_variants(args.manifest_path)
     log.info("sweep.verified_variants", variants=sorted(verified_variants))
@@ -385,6 +407,7 @@ def main() -> None:
                 n_warmup=args.n_warmup,
                 max_retries=args.max_retries,
                 request_timeout_s=args.request_timeout_s,
+                bust_prompt_cache=args.bust_prompt_cache,
             )
         )
     finally:

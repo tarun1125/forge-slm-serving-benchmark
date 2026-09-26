@@ -20,7 +20,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.23076923076923078
+    "execution_accuracy": 0.2111111111111111
   },
   {
     "arm": "mlx_lm",
@@ -43,7 +43,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.3333333333333333
+    "execution_accuracy": 0.4
   },
   {
     "arm": "mlx_lm",
@@ -89,7 +89,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.23076923076923078
+    "execution_accuracy": 0.2111111111111111
   },
   {
     "arm": "mlx_lm",
@@ -112,7 +112,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.3333333333333333
+    "execution_accuracy": 0.4
   },
   {
     "arm": "mlx_lm",
@@ -158,7 +158,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.23076923076923078
+    "execution_accuracy": 0.2111111111111111
   },
   {
     "arm": "mlx_lm",
@@ -181,7 +181,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.3333333333333333
+    "execution_accuracy": 0.4
   },
   {
     "arm": "mlx_lm",
@@ -227,7 +227,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.23076923076923078
+    "execution_accuracy": 0.2111111111111111
   },
   {
     "arm": "mlx_lm",
@@ -250,7 +250,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.3333333333333333
+    "execution_accuracy": 0.4
   },
   {
     "arm": "mlx_lm",
@@ -296,7 +296,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.23076923076923078
+    "execution_accuracy": 0.2111111111111111
   },
   {
     "arm": "mlx_lm",
@@ -319,7 +319,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.3333333333333333
+    "execution_accuracy": 0.4
   },
   {
     "arm": "mlx_lm",
@@ -365,7 +365,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.18181818181818182
+    "execution_accuracy": 0.2
   },
   {
     "arm": "mlx_lm",
@@ -388,7 +388,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.3
   },
   {
     "arm": "mlx_lm",
@@ -434,7 +434,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.18181818181818182
+    "execution_accuracy": 0.2
   },
   {
     "arm": "mlx_lm",
@@ -457,7 +457,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.3
   },
   {
     "arm": "mlx_lm",
@@ -503,7 +503,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.18181818181818182
+    "execution_accuracy": 0.2
   },
   {
     "arm": "mlx_lm",
@@ -526,7 +526,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.3
   },
   {
     "arm": "mlx_lm",
@@ -572,7 +572,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.18181818181818182
+    "execution_accuracy": 0.2
   },
   {
     "arm": "mlx_lm",
@@ -595,7 +595,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.3
   },
   {
     "arm": "mlx_lm",
@@ -641,7 +641,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.18181818181818182
+    "execution_accuracy": 0.2
   },
   {
     "arm": "mlx_lm",
@@ -664,7 +664,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.3
   },
   {
     "arm": "mlx_lm",
@@ -710,7 +710,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.2777777777777778
   },
   {
     "arm": "mlx_lm",
@@ -733,7 +733,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.36363636363636365
+    "execution_accuracy": 0.4
   },
   {
     "arm": "mlx_lm",
@@ -779,7 +779,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.2777777777777778
   },
   {
     "arm": "mlx_lm",
@@ -802,7 +802,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.36363636363636365
+    "execution_accuracy": 0.4
   },
   {
     "arm": "mlx_lm",
@@ -848,7 +848,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.2777777777777778
   },
   {
     "arm": "mlx_lm",
@@ -871,7 +871,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.36363636363636365
+    "execution_accuracy": 0.4
   },
   {
     "arm": "mlx_lm",
@@ -917,7 +917,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.2777777777777778
   },
   {
     "arm": "mlx_lm",
@@ -940,7 +940,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.36363636363636365
+    "execution_accuracy": 0.4
   },
   {
     "arm": "mlx_lm",
@@ -986,7 +986,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.2777777777777778
   },
   {
     "arm": "mlx_lm",
@@ -1009,7 +1009,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.36363636363636365
+    "execution_accuracy": 0.4
   },
   {
     "arm": "mlx_lm",
@@ -2090,7 +2090,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.15789473684210525
+    "execution_accuracy": 0.27888888888888885
   },
   {
     "arm": "vllm_metal",
@@ -2113,7 +2113,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.35714285714285715
+    "execution_accuracy": 0.4333333333333333
   },
   {
     "arm": "vllm_metal",
@@ -2159,7 +2159,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.15789473684210525
+    "execution_accuracy": 0.27888888888888885
   },
   {
     "arm": "vllm_metal",
@@ -2182,7 +2182,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.35714285714285715
+    "execution_accuracy": 0.4333333333333333
   },
   {
     "arm": "vllm_metal",
@@ -2228,7 +2228,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.15789473684210525
+    "execution_accuracy": 0.27888888888888885
   },
   {
     "arm": "vllm_metal",
@@ -2251,7 +2251,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.35714285714285715
+    "execution_accuracy": 0.4333333333333333
   },
   {
     "arm": "vllm_metal",
@@ -2297,7 +2297,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.15789473684210525
+    "execution_accuracy": 0.27888888888888885
   },
   {
     "arm": "vllm_metal",
@@ -2320,7 +2320,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.35714285714285715
+    "execution_accuracy": 0.4333333333333333
   },
   {
     "arm": "vllm_metal",
@@ -2366,7 +2366,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.15789473684210525
+    "execution_accuracy": 0.27888888888888885
   },
   {
     "arm": "vllm_metal",
@@ -2389,7 +2389,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.35714285714285715
+    "execution_accuracy": 0.4333333333333333
   },
   {
     "arm": "vllm_metal",
@@ -2435,7 +2435,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.21000000000000002
   },
   {
     "arm": "vllm_metal",
@@ -2458,7 +2458,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.3076923076923077
+    "execution_accuracy": 0.36666666666666664
   },
   {
     "arm": "vllm_metal",
@@ -2504,7 +2504,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.21000000000000002
   },
   {
     "arm": "vllm_metal",
@@ -2527,7 +2527,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.3076923076923077
+    "execution_accuracy": 0.36666666666666664
   },
   {
     "arm": "vllm_metal",
@@ -2573,7 +2573,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.21000000000000002
   },
   {
     "arm": "vllm_metal",
@@ -2596,7 +2596,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.3076923076923077
+    "execution_accuracy": 0.36666666666666664
   },
   {
     "arm": "vllm_metal",
@@ -2642,7 +2642,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.21000000000000002
   },
   {
     "arm": "vllm_metal",
@@ -2665,7 +2665,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.3076923076923077
+    "execution_accuracy": 0.36666666666666664
   },
   {
     "arm": "vllm_metal",
@@ -2711,7 +2711,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.25
+    "execution_accuracy": 0.21000000000000002
   },
   {
     "arm": "vllm_metal",
@@ -2734,7 +2734,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.3076923076923077
+    "execution_accuracy": 0.36666666666666664
   },
   {
     "arm": "vllm_metal",
@@ -2780,7 +2780,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.15384615384615385
+    "execution_accuracy": 0.18888888888888888
   },
   {
     "arm": "vllm_metal",
@@ -2803,7 +2803,7 @@
     "n_requests": 3,
     "n_succeeded": 3,
     "n_failed": 0,
-    "execution_accuracy": 0.36363636363636365
+    "execution_accuracy": 0.3555555555555555
   },
   {
     "arm": "vllm_metal",
@@ -2849,7 +2849,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.15384615384615385
+    "execution_accuracy": 0.18888888888888888
   },
   {
     "arm": "vllm_metal",
@@ -2872,7 +2872,7 @@
     "n_requests": 6,
     "n_succeeded": 6,
     "n_failed": 0,
-    "execution_accuracy": 0.36363636363636365
+    "execution_accuracy": 0.3555555555555555
   },
   {
     "arm": "vllm_metal",
@@ -2918,7 +2918,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.15384615384615385
+    "execution_accuracy": 0.18888888888888888
   },
   {
     "arm": "vllm_metal",
@@ -2941,7 +2941,7 @@
     "n_requests": 12,
     "n_succeeded": 12,
     "n_failed": 0,
-    "execution_accuracy": 0.36363636363636365
+    "execution_accuracy": 0.3555555555555555
   },
   {
     "arm": "vllm_metal",
@@ -2987,7 +2987,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.15384615384615385
+    "execution_accuracy": 0.18888888888888888
   },
   {
     "arm": "vllm_metal",
@@ -3010,7 +3010,7 @@
     "n_requests": 24,
     "n_succeeded": 24,
     "n_failed": 0,
-    "execution_accuracy": 0.36363636363636365
+    "execution_accuracy": 0.3555555555555555
   },
   {
     "arm": "vllm_metal",
@@ -3056,7 +3056,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.15384615384615385
+    "execution_accuracy": 0.18888888888888888
   },
   {
     "arm": "vllm_metal",
@@ -3079,7 +3079,7 @@
     "n_requests": 48,
     "n_succeeded": 48,
     "n_failed": 0,
-    "execution_accuracy": 0.36363636363636365
+    "execution_accuracy": 0.3555555555555555
   },
   {
     "arm": "vllm_metal",

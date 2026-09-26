@@ -235,6 +235,13 @@ class TestSettingsBlankValues:
 
 
 class TestServerSoftware:
+    @pytest.fixture(autouse=True)
+    def _no_dotenv(self, tmp_path, monkeypatch):
+        # pydantic-settings deep-MERGES dict fields across sources, so a real
+        # .env's OLLAMA_CLOUD_SERVER_ENV would be merged into the values these
+        # tests pass in rather than replaced by them. Run away from it.
+        monkeypatch.chdir(tmp_path)
+
     def test_cloud_daemon_settings_come_from_settings_as_strings(self):
         arm = ollama_cloud_arm(
             "q4",

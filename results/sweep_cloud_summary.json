@@ -1,0 +1,278 @@
+[
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 1,
+    "prompt_bucket": "long",
+    "ttft_ms": {
+      "p50": 1053.3255830087,
+      "p95": 36707.61345900246,
+      "p99": 36707.61345900246,
+      "n": 3
+    },
+    "inter_token_latency_ms": {
+      "p50": 47.99454199383035,
+      "p95": 56.17312500544358,
+      "p99": 92.76041599514429,
+      "n": 224
+    },
+    "throughput_tokens_per_sec": 4.756453858397465,
+    "n_requests": 3,
+    "n_succeeded": 3,
+    "n_failed": 0,
+    "execution_accuracy": 0.22000000000000003
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 1,
+    "prompt_bucket": "medium",
+    "ttft_ms": {
+      "p50": 560.9572919929633,
+      "p95": 652.3989169945708,
+      "p99": 652.3989169945708,
+      "n": 3
+    },
+    "inter_token_latency_ms": {
+      "p50": 36.882250002236106,
+      "p95": 40.74587499781046,
+      "p99": 69.36429100460373,
+      "n": 136
+    },
+    "throughput_tokens_per_sec": 21.857771534209125,
+    "n_requests": 3,
+    "n_succeeded": 3,
+    "n_failed": 0,
+    "execution_accuracy": 0.5
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 1,
+    "prompt_bucket": "short",
+    "ttft_ms": {
+      "p50": 1031.7876670014812,
+      "p95": 1079.8475420015166,
+      "p99": 1079.8475420015166,
+      "n": 3
+    },
+    "inter_token_latency_ms": {
+      "p50": 30.511958000715822,
+      "p95": 33.259083997108974,
+      "p99": 39.05383299570531,
+      "n": 167
+    },
+    "throughput_tokens_per_sec": 20.670288675071795,
+    "n_requests": 3,
+    "n_succeeded": 3,
+    "n_failed": 0,
+    "execution_accuracy": 0.0
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 2,
+    "prompt_bucket": "long",
+    "ttft_ms": {
+      "p50": 77721.93374999915,
+      "p95": 161484.0618330054,
+      "p99": 161484.0618330054,
+      "n": 6
+    },
+    "inter_token_latency_ms": {
+      "p50": 48.70499999378808,
+      "p95": 55.8929580001859,
+      "p99": 58.833041999605484,
+      "n": 286
+    },
+    "throughput_tokens_per_sec": 0.7687382828739271,
+    "n_requests": 6,
+    "n_succeeded": 6,
+    "n_failed": 0,
+    "execution_accuracy": 0.22000000000000003
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 2,
+    "prompt_bucket": "medium",
+    "ttft_ms": {
+      "p50": 521.6797500033863,
+      "p95": 2642.9930409940425,
+      "p99": 2642.9930409940425,
+      "n": 6
+    },
+    "inter_token_latency_ms": {
+      "p50": 36.83283299324103,
+      "p95": 38.90183399198577,
+      "p99": 45.10229200241156,
+      "n": 229
+    },
+    "throughput_tokens_per_sec": 22.36120854175019,
+    "n_requests": 6,
+    "n_succeeded": 6,
+    "n_failed": 0,
+    "execution_accuracy": 0.5
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 2,
+    "prompt_bucket": "short",
+    "ttft_ms": {
+      "p50": 283.7632079899777,
+      "p95": 1967.1473329945002,
+      "p99": 1967.1473329945002,
+      "n": 6
+    },
+    "inter_token_latency_ms": {
+      "p50": 30.471958001726307,
+      "p95": 42.137457989156246,
+      "p99": 86.31891700497363,
+      "n": 300
+    },
+    "throughput_tokens_per_sec": 30.262104868214458,
+    "n_requests": 6,
+    "n_succeeded": 6,
+    "n_failed": 0,
+    "execution_accuracy": 0.0
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 4,
+    "prompt_bucket": "long",
+    "ttft_ms": {
+      "p50": 42888.81762500387,
+      "p95": 92687.13179099723,
+      "p99": 92687.13179099723,
+      "n": 12
+    },
+    "inter_token_latency_ms": {
+      "p50": 48.35399999865331,
+      "p95": 56.6184999916004,
+      "p99": 59.76849999569822,
+      "n": 655
+    },
+    "throughput_tokens_per_sec": 2.855857057523825,
+    "n_requests": 12,
+    "n_succeeded": 12,
+    "n_failed": 0,
+    "execution_accuracy": 0.22000000000000003
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 4,
+    "prompt_bucket": "medium",
+    "ttft_ms": {
+      "p50": 3451.723417005269,
+      "p95": 8404.490375003661,
+      "p99": 8404.490375003661,
+      "n": 12
+    },
+    "inter_token_latency_ms": {
+      "p50": 36.52050001255702,
+      "p95": 41.02133400738239,
+      "p99": 51.11733399098739,
+      "n": 535
+    },
+    "throughput_tokens_per_sec": 23.48629169436194,
+    "n_requests": 12,
+    "n_succeeded": 12,
+    "n_failed": 0,
+    "execution_accuracy": 0.5
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 4,
+    "prompt_bucket": "short",
+    "ttft_ms": {
+      "p50": 2685.940916999243,
+      "p95": 9589.514125007554,
+      "p99": 9589.514125007554,
+      "n": 12
+    },
+    "inter_token_latency_ms": {
+      "p50": 30.802250010310672,
+      "p95": 34.70583300804719,
+      "p99": 43.23916700377595,
+      "n": 675
+    },
+    "throughput_tokens_per_sec": 27.710669602421312,
+    "n_requests": 12,
+    "n_succeeded": 12,
+    "n_failed": 0,
+    "execution_accuracy": 0.0
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 8,
+    "prompt_bucket": "long",
+    "ttft_ms": {
+      "p50": 18878.040541996597,
+      "p95": 59551.48608300078,
+      "p99": 106783.76904201286,
+      "n": 24
+    },
+    "inter_token_latency_ms": {
+      "p50": 48.47608398995362,
+      "p95": 56.75775000418071,
+      "p99": 91.64154199243058,
+      "n": 1388
+    },
+    "throughput_tokens_per_sec": 9.12261307097758,
+    "n_requests": 24,
+    "n_succeeded": 24,
+    "n_failed": 0,
+    "execution_accuracy": 0.22000000000000003
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 8,
+    "prompt_bucket": "medium",
+    "ttft_ms": {
+      "p50": 7688.895750005031,
+      "p95": 30929.305208002916,
+      "p99": 32654.32066700305,
+      "n": 24
+    },
+    "inter_token_latency_ms": {
+      "p50": 37.064082993310876,
+      "p95": 39.441625005565584,
+      "p99": 42.181249998975545,
+      "n": 1172
+    },
+    "throughput_tokens_per_sec": 18.212398987104294,
+    "n_requests": 24,
+    "n_succeeded": 24,
+    "n_failed": 0,
+    "execution_accuracy": 0.5
+  },
+  {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "concurrency": 8,
+    "prompt_bucket": "short",
+    "ttft_ms": {
+      "p50": 5982.700207998278,
+      "p95": 14245.731624992914,
+      "p99": 15260.46629200573,
+      "n": 24
+    },
+    "inter_token_latency_ms": {
+      "p50": 31.03958399151452,
+      "p95": 34.48625000601169,
+      "p99": 46.42054199939594,
+      "n": 1668
+    },
+    "throughput_tokens_per_sec": 30.981200785238872,
+    "n_requests": 24,
+    "n_succeeded": 24,
+    "n_failed": 0,
+    "execution_accuracy": 0.0
+  }
+]
