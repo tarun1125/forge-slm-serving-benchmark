@@ -29,6 +29,9 @@ missing, and both are documented rather than quietly dropped:
   the only single machine here that serves 1M queries/month. Weights sha256-verified on both
   VMs. See [docs/cloud-arm.md](docs/cloud-arm.md) for the runbooks and the "Cloud VMs" section
   of [docs/cost-model.md](docs/cost-model.md) for the numbers.
+  Raw rows, sweep logs, server logs and run IDs are archived in
+  [evidence/azure-2026-09-26/](evidence/azure-2026-09-26/) (checksummed; reproduces the
+  committed summaries exactly).
 - **Two sets of TTFT numbers.** The cloud run showed the original sweep's long-prompt TTFT was
   partly measuring prompt-cache hits. Every local arm was re-measured with
   `--bust-prompt-cache` (results in `results/sweep_cold/`); the write-up reports both, labelled,
