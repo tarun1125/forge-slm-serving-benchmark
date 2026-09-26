@@ -59,7 +59,7 @@ queries/month. You published that. It's one of the strongest honesty signals in 
 **This was missing from the resume entirely and it's better than what was on it.**
 
 > All **9 (arm × quantization) combinations score exactly 0% execution accuracy on the short
-> prompt bucket** — a reduced, single-collection schema. Medium and long buckets score 15–50%
+> prompt bucket** — a reduced, single-collection schema. Medium and long buckets score 19–50%
 > on the same arms and variants.
 
 **Root cause:** the fine-tune was trained exclusively on the full, real multi-database batch
@@ -85,9 +85,10 @@ to reject, when at n≈10 nothing short of a huge effect is detectable.
 
 **The correct claim:** *4-bit quantization bought vllm-metal a **3.1× throughput gain**
 (148.9 → 459.8 tok/s) for an accuracy difference within noise.* Quantization moves accuracy by
-at most ~3pp within a bucket and **not always in the expected direction** — Ollama's q4 scored
-*higher* than its f16 baseline, which at n≈10 per cell is sampling noise, and you called it
-that rather than claiming a win.
+at most 10pp within a bucket — one case, at n=10 — and 4-bit scored **higher** than full
+precision in 4 of 6 comparisons, which is sampling noise, and you call it that rather than
+claiming a win. (Re-scored numbers: the first version averaged over distinct generations
+instead of cases and said "~3pp" — see failure #5.)
 
 **"Within noise" ≠ "no difference."** If asked what effect you could have detected: you
 couldn't detect much, and the honest framing is that the throughput gain was large and

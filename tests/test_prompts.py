@@ -113,3 +113,53 @@ class TestBuildShort:
         assert "cars_data" in system_prompt
         assert "car_names" not in system_prompt  # only the gold collection, not the whole db
         assert question == "How many cars?"
+
+
+class TestPromptNonce:
+    def test_no_nonce_leaves_the_prompt_untouched(self):
+        from forge.phase2.client import with_prompt_nonce
+
+        assert with_prompt_nonce("schema...", None) == "schema..."
+
+    def test_nonce_goes_first_so_no_prefix_is_shared(self):
+        from forge.phase2.client import with_prompt_nonce
+
+        a, b = with_prompt_nonce("schema...", "aaaa"), with_prompt_nonce("schema...", "bbbb")
+        assert a.endswith("schema...") and b.endswith("schema...")
+        # The two prompts diverge inside the tag, before any schema text.
+        first_diff = next(i for i, (x, y) in enumerate(zip(a, b, strict=False)) if x != y)
+        assert first_diff < len("[request ") + 1
+
+
+class TestRunCellCacheBusting:
+    def _run(self, bust: bool, monkeypatch):
+        import asyncio
+
+        from forge.phase2 import sweep
+        from forge.phase2.arms import ArmConfig
+        from forge.phase2.prompts import PromptCase
+
+        seen: list[str | None] = []
+
+        async def fake_run_request(client, arm_config, **kwargs):
+            seen.append(kwargs["prompt_nonce"])
+            return kwargs["case_id"]
+
+        monkeypatch.setattr(sweep, "run_request", fake_run_request)
+        arm = ArmConfig(name="x", model_variant="v", base_url="http://x/v1", model_id="m")
+        cases = [
+            PromptCase(case_id=f"c{i}", database="db", prompt_bucket="long", system_prompt="s",
+                       question="q", token_count=1)
+            for i in range(3)
+        ]  # fmt: skip
+        asyncio.run(sweep.run_cell(None, arm, cases, 4, "run", n_repeats=2, n_warmup=1,
+                                   bust_prompt_cache=bust))  # fmt: skip
+        return seen
+
+    def test_every_request_including_warmup_gets_a_distinct_nonce(self, monkeypatch):
+        seen = self._run(True, monkeypatch)
+        assert len(seen) == 12  # 3 rounds x concurrency 4
+        assert None not in seen and len(set(seen)) == 12
+
+    def test_default_run_sends_no_nonce(self, monkeypatch):
+        assert set(self._run(False, monkeypatch)) == {None}

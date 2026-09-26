@@ -39,6 +39,11 @@ class RequestResult(BaseModel):
 
     error: str | None = None  # None means success
 
+    # Set only by a --bust-prompt-cache sweep: the random tag prepended to this
+    # request's system prompt so no server could reuse a cached prefix for it.
+    # Its presence is the per-row proof that TTFT here includes a cold prefill.
+    prompt_nonce: str | None = None
+
     # Thermal (Mac arms) — logged per-request so drift correlates with time,
     # not with arm (see thermal.py's module docstring for the randomization
     # rationale this feeds into). No raw Celsius here deliberately: this

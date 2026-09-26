@@ -112,3 +112,21 @@ class TestBuildSummary:
             raise AssertionError("expected RuntimeError")
         except RuntimeError as e:
             assert "No sweep results found" in str(e)
+
+
+class TestArmFilter:
+    def test_cloud_rows_stay_out_of_the_local_summary(self, tmp_path):
+        from forge.phase5.build_summary import LOCAL_ARMS
+
+        sweep_dir = tmp_path / "sweep"
+        sweep_dir.mkdir()
+        for arm in ("ollama", "ollama_cloud"):
+            (sweep_dir / f"{arm}_q4_c1_short.jsonl").write_text(
+                _result(arm, "q4", 1, "short", "c1").model_dump_json() + "\n"
+            )
+        rows = build_summary(sweep_dir, tmp_path / "none.json", LOCAL_ARMS)
+        assert {r["arm"] for r in rows} == {"ollama"}
+        assert {r["arm"] for r in build_summary(sweep_dir, tmp_path / "none.json")} == {
+            "ollama",
+            "ollama_cloud",
+        }

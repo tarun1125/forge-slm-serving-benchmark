@@ -4,9 +4,10 @@
 
 A LoRA fine-tuned Qwen2.5-Coder-1.5B, measured for latency, throughput, quality, and cost per
 1,000 queries across four real serving arms — Apple Silicon MLX, Ollama, vLLM on Metal, and a
-hosted API — plus a cloud-GPU (vLLM on CUDA) cost estimate. That fifth arm was deferred (no
-CUDA hardware) and is never presented as measured: it's a documented scaling factor applied to
-the real vllm_metal numbers, called out everywhere it appears in `docs/cost-model.md`.
+hosted API — plus the same Ollama stack measured on a rented Azure Arm CPU (Cobalt 100). A
+cloud-GPU (vLLM on CUDA) arm is wired with a full Azure runbook but not yet run; until it is, its
+cost-model line is a documented scaling factor applied to the real vllm_metal numbers, called
+out as an estimate everywhere it appears in `docs/cost-model.md`.
 
 **Headline finding this benchmark is built to surface:** prefill (TTFT) is compute-bound;
 decode (inter-token latency) is memory-bandwidth-bound. They do not scale the same way, and
@@ -21,13 +22,16 @@ missing, and both are documented rather than quietly dropped:
 
 - **No live hosted demo.** The Gradio app runs locally. Hosting it on a free-CPU Hugging Face
   Space now requires HF PRO, which this project isn't paying for — see `space/README.md`.
-- **No cloud numbers, anywhere.** Two cloud arms — `ollama_cloud` (commodity CPU) and
-  `vllm_cuda` (a rented NVIDIA GPU) — are wired, unit-tested and verified end-to-end against a
-  local stand-in server, but have never been run against a cloud machine. The cost model's
-  cloud-GPU throughput figure is therefore still the extrapolation it always was, flagged as
-  such everywhere it appears. See [docs/cloud-arm.md](docs/cloud-arm.md) for the design
-  decisions, the sequencing, and the dry-run procedure that verifies both arms without a cloud
-  account.
+- **Cloud CPU measured; cloud GPU pending.** `ollama_cloud` ran on an Azure
+  `Standard_D4ps_v6` (4× Neoverse-N2) with the same Ollama version, GGUF (sha256-verified) and
+  daemon settings as the Mac: 0 failures, decode 6–8x slower, cheaper per query at 10k/month.
+  `vllm_cuda` is waiting on GPU quota; its cost-model line stays an estimate until then. See
+  [docs/cloud-arm.md](docs/cloud-arm.md) for the runbooks and the "Cloud VMs" section of
+  [docs/cost-model.md](docs/cost-model.md) for the numbers.
+- **Two sets of TTFT numbers.** The cloud run showed the original sweep's long-prompt TTFT was
+  partly measuring prompt-cache hits. Every local arm was re-measured with
+  `--bust-prompt-cache` (results in `results/sweep_cold/`); the write-up reports both, labelled,
+  and failure #5 in [docs/failure-gallery.md](docs/failure-gallery.md) explains it.
 
 ## Setup
 
@@ -64,11 +68,14 @@ python -m forge.phase2.score_accuracy                           # execution-accu
 Results land in `results/sweep/` (gitignored — regenerate from the harness) and get logged to
 MLflow (`sqlite:///mlflow.db`, also gitignored).
 
-Two cloud arms, `ollama_cloud` (commodity CPU) and `vllm_cuda` (rented NVIDIA GPU), are wired and
-unit-tested but **have never been run** — no cloud numbers exist anywhere in this repo. See
-[docs/cloud-arm.md](docs/cloud-arm.md) for their design decisions, the sequencing (the CPU arm
-needs no GPU quota and runs first), and the local dry-run procedure that verifies both without a
-cloud account.
+To measure prefill rather than prompt-cache hits, add `--bust-prompt-cache --output-dir
+results/sweep_cold` (the sweep refuses to write a busted run into `results/sweep/`). Remote
+arms should also use `--max-retries 0` — a retried request's TTFT silently includes the failed
+attempt.
+
+Two cloud arms, `ollama_cloud` (commodity CPU, **measured on Azure Cobalt 100**) and `vllm_cuda`
+(rented NVIDIA GPU, **pending quota**). See [docs/cloud-arm.md](docs/cloud-arm.md) for their
+design decisions, the `az` provisioning commands, both runbooks, and the local dry-run procedure.
 
 ## Phase 3 — cost model
 
