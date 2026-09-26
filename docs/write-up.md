@@ -5,7 +5,7 @@ questions into PyMongo queries, measured across three real serving stacks —
 `mlx_lm`, Ollama, and vLLM on Metal — three quantization levels each, and a hosted
 API, on an Apple M5 Pro — then the same Ollama stack on a rented Azure Cobalt 100
 CPU, and every local arm again with the prompt cache defeated. 2,511 requests in
-the original sweep, plus 135 cached and 135 cache-busted on Azure and 1,215
+the original sweep, plus 135 cached and 135 cache-busted on the Azure CPU, 1,143 cached and 1,143 cache-busted on an Azure T4 GPU, and 1,215
 cache-busted locally. Zero invented numbers. This is what came out of it —
 including the part where the cloud run showed some of the original latency
 numbers were measuring the wrong thing.
@@ -136,11 +136,46 @@ temperature 0, and the long bucket still scored 22% on the VM against 30% on
 the Mac: llama.cpp's CPU and Metal kernels accumulate differently, and greedy
 decoding is deterministic per machine, not across machines.
 
-Still missing from this comparison: a real vLLM-on-CUDA arm. The harness and a
-full Azure runbook exist (`docs/cloud-arm.md`); the run is waiting on GPU quota.
-Until then the cloud-GPU line in the cost model is a documented estimate — a
-bandwidth-ratio scaling factor applied to a real measured `vllm_metal` number —
-labeled as an estimate everywhere it appears.
+**A cloud GPU, measured — and a test of the bandwidth argument.** vLLM 0.30 on an
+Azure `Standard_NC4as_T4_v3` (Tesla T4 16 GB, $0.579/h), serving the same bf16
+checkpoint — sha256-verified file-by-file on the VM — cast to fp16, because
+Turing has no bf16. On real benchmark prompts its first outputs were
+byte-identical to the Mac's `mlx_lm` bf16 generations, and it scored the same
+40.0% on the medium bucket.
+
+The T4 was the useful GPU to test, not just the cheap one: its memory bandwidth
+(320 GB/s) is within 4% of the M5 Pro's (307 GB/s). If decode really is
+memory-bandwidth-bound — this write-up's headline claim, and the entire basis of
+the cost model's estimated A100 row — the two should decode at about the same
+speed. Measured per request under vLLM at concurrency 1, the T4 decodes at
+**73 tok/s** against the M5 Pro's **84**: 0.87x where bandwidth predicts 1.04x.
+The argument holds to within ~16% on real hardware — the first evidence behind
+what had been labelled the least certain number in the model.
+
+| vLLM, bf16 checkpoint, medium bucket | M5 Pro (`vllm_metal`) | T4 (`vllm_cuda`, fp16) |
+|---|---|---|
+| Decode, per request, concurrency 1 | 84 tok/s | 73 tok/s |
+| Throughput, concurrency 8, cached / cache defeated | 148.9 / 106.2 tok/s | 191.0 / 87.5 tok/s |
+| Throughput, concurrency 64, cached | — (sweep stopped at 16: 252.9) | 568.9 tok/s |
+| Cold TTFT, long bucket, concurrency 1 | 0.70 s | 3.08 s |
+| Cost per query at 10k/month | ₹0.694 | ₹3.72 |
+
+Where they differ is everything *except* decode. The T4 prefills 4.4x slower
+(no FlashAttention-2 below compute capability 8.0; vLLM falls back to Triton
+attention), and its 16 GB of dedicated memory holds a 358k-token KV cache, so
+continuous batching keeps scaling to concurrency 64 where the 24 GB shared Mac
+was only swept to 16. On cost it's the opposite of the CPU VM: $423/month of
+always-on T4 is the most expensive way to serve 10k queries in this project,
+and the only self-hosted option that serves 1M/month on a single machine. It
+breaks even with Groq at 1M queries/month.
+
+One trap for anyone reading the raw rows: the T4's inter-token latency column
+is meaningless. The client times each streamed chunk *after* an SSH tunnel, and
+at ~14 ms per token the tunnel delivers them in bursts — 42–50% of gaps arrive
+under 1 ms, for a p50 of 0.43 ms that would imply 2,300 tok/s. The per-request
+rate above (tokens after the first ÷ time from first to last token) is immune
+to bursting. The slower CPU VM and the local arms don't show it (≤3% of gaps
+under 1 ms). See failure #5.
 
 And on raw correctness alone: Groq's much larger, untuned `gpt-oss-120b` scored
 **66.7%** accuracy on a real 15-case sample — meaningfully higher than any local
@@ -171,9 +206,13 @@ reasoning and what was and wasn't tested.
   Gradio Space on free CPU, and this project isn't paying for one. The model is
   public on HF Hub and the demo (`space/app.py`) runs locally with one `pip
   install` — see `space/README.md`.
-- No vLLM-on-CUDA measurement yet, as above — an estimate everywhere it appears,
-  pending GPU quota. (The estimate's bandwidth figure is the A100 SXM's 2,039 GB/s
-  while the price it's paired with is for a PCIe A100, 1,935 GB/s — ~5% optimistic.)
+- No A100 measurement. The measured GPU is a T4; the cost model's A100 row is still
+  a bandwidth-scaled estimate (now using the PCIe part's 1,935 GB/s, matching the
+  price it's paired with — it previously used the SXM part's 2,039).
+- Remote arms at concurrency ≥ 32 lost ~0.5% of requests before they reached the
+  server (vLLM logged every request it received as HTTP 200). Most likely the SSH
+  tunnel under 32–64 simultaneous connections; not reproduced in isolated bursts,
+  so not proven. They are reported as `n_failed`, not retried.
 - The cost table prices every arm at its *cached* concurrency-8 throughput. That is
   right for a single shared system prompt and optimistic for unique prompts; the
   cache-defeated numbers above are the other bound.

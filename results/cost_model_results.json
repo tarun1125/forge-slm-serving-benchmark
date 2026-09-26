@@ -123,6 +123,29 @@
       "break_even_monthly_volume": 300000,
       "cost_per_accuracy_point_inr": 1.1871552,
       "vms_needed_at_max_volume": 2
+    },
+    {
+      "arm": "vllm_cuda",
+      "variant": "bf16",
+      "processor": "Tesla T4",
+      "provider": "azure",
+      "instance_type": "Standard_NC4as_T4_v3",
+      "region": "centralindia",
+      "hourly_usd": 0.579,
+      "hourly_usd_source": "recorded on result rows",
+      "server_software": [
+        "vllm 0.30.0"
+      ],
+      "throughput_tokens_per_sec": 190.99262839787366,
+      "avg_prompt_tokens": 1407.9166666666667,
+      "avg_completion_tokens": 70.54166666666667,
+      "n_requests": 24,
+      "n_failed": 0,
+      "execution_accuracy": 0.4,
+      "cost_per_query_inr_at_10k_monthly": 3.719496,
+      "break_even_monthly_volume": 1000000,
+      "cost_per_accuracy_point_inr": 9.298739999999999,
+      "vms_needed_at_max_volume": 1
     }
   ],
   "hosted_api": {

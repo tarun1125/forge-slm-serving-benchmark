@@ -71,8 +71,9 @@ ASSUMPTIONS = CostAssumptions(
     mac_power_draw_watts=75.0,
     electricity_tariff_inr_per_kwh=5.5,
     cloud_gpu_hourly_usd=1.39,
-    cloud_gpu_throughput_scaling_factor=2039
-    / 307,  # A100 80GB HBM2e / M5 Pro unified memory bandwidth
+    # A100 80GB **PCIe** (1,935 GB/s) / M5 Pro unified memory (307 GB/s). Was
+    # 2039/307 — the SXM part's bandwidth, paired with a PCIe part's price.
+    cloud_gpu_throughput_scaling_factor=1935 / 307,
     groq_input_usd_per_1m_tokens=0.15,
     groq_output_usd_per_1m_tokens=0.60,
     usd_to_inr=88.0,
@@ -473,7 +474,7 @@ def render_doc(
         f'| Mac power draw (active inference) | {ASSUMPTIONS.mac_power_draw_watts:.0f} W | Estimated: 62W CPU sustained load (Notebookcheck, 16" M5 Pro) + system/display overhead |',  # noqa: E501
         f"| Indian electricity tariff | ₹{ASSUMPTIONS.electricity_tariff_inr_per_kwh:.2f}/kWh | India residential average, FY 2025-26 |",  # noqa: E501
         f"| Cloud GPU hourly rate | ${ASSUMPTIONS.cloud_gpu_hourly_usd:.2f}/hr | RunPod, A100 80GB PCIe, on-demand (Sept 2026) |",  # noqa: E501
-        f"| Cloud GPU throughput scaling | {ASSUMPTIONS.cloud_gpu_throughput_scaling_factor:.2f}x | A100 HBM2e (2039 GB/s) / M5 Pro unified memory (307 GB/s) — decode is memory-bandwidth-bound (Phase 2's own headline finding), applied to a REAL measured vllm_metal number. **Estimated, not measured** — the vLLM-on-CUDA arm was deferred. The least certain number in this model. |",  # noqa: E501
+        f"| Cloud GPU throughput scaling | {ASSUMPTIONS.cloud_gpu_throughput_scaling_factor:.2f}x | A100 80GB PCIe HBM2e (1,935 GB/s) / M5 Pro unified memory (307 GB/s) — decode is memory-bandwidth-bound (Phase 2's own headline finding), applied to a REAL measured vllm_metal number. **Estimated, not measured, for an A100.** The method itself has now been tested once on real hardware: a T4 (320 GB/s, ~1.04x the M5 Pro's bandwidth) decoded at 0.87x the M5 Pro's per-request rate under vLLM — the bandwidth ratio held to within ~16%. See the Cloud VMs section for the measured T4 row. |",  # noqa: E501
         f"| Groq input pricing | ${ASSUMPTIONS.groq_input_usd_per_1m_tokens:.2f}/1M tokens | Groq, `openai/gpt-oss-120b`, confirmed live against the real account (Sept 2026) |",  # noqa: E501
         f"| Groq output pricing | ${ASSUMPTIONS.groq_output_usd_per_1m_tokens:.2f}/1M tokens | Same source |",  # noqa: E501
         f"| USD→INR | ₹{ASSUMPTIONS.usd_to_inr:.0f} | Approximate, Sept 2026 — a daily-fluctuating assumption, flagged as such |",  # noqa: E501

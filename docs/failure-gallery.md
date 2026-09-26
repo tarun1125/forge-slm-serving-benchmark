@@ -247,6 +247,50 @@ completed, writing rows whose `error` read `Connection error.`. It happened for
 real between the two Azure runs (the idle tunnel died). A preflight now requires
 `/models` to answer and list the model, or the sweep refuses to start.
 
+**On a fast remote server, inter-token latency measures the network, not the
+model.** The T4 run reported an ITL p50 of 0.43 ms on the medium bucket — 2,300
+tok/s, several times what a T4 can decode a 1.5B model at. The server wasn't
+the problem: it sent ~1 chunk per token (0.95 chunks/token). The client timed
+each chunk's *arrival* after an SSH tunnel, and at ~14 ms per token the tunnel
+delivered them in bursts — 42–50% of gaps under 1 ms. `client.py`'s own
+docstring had predicted exactly this ("if a specific arm's ITL numbers look
+implausibly smooth… check this assumption first"). Per-request decode rate —
+tokens after the first divided by first-to-last-token time — is immune, and
+gives 73 tok/s. The CPU VM escaped it because at 30+ ms per token each chunk
+arrives on its own; the local arms never cross a network. Lesson: the ITL
+percentile is only valid when the per-token time comfortably exceeds the
+transport's batching window, so a remote row's ITL has to be checked against
+its per-request rate before it is believed.
+
+**vLLM wouldn't start: no C compiler.** The first `vllm serve` on the T4 died
+in its memory-profiling step with `InductorError: Failed to find C compiler` —
+vLLM compiles kernels at startup (Triton, `torch.compile`), and Azure's Ubuntu
+image ships without `gcc`. The log line directly above it, `FA2 is only supported
+on devices with compute capability >= 8`, looks like the cause and isn't: vLLM
+falls back to Triton attention on a T4 by itself. `build-essential` is now in
+the runbook's driver step.
+
+**Requests lost in transit at high concurrency.** Both remote GPU sweeps lost a
+handful of requests at concurrency 32–64 only (6 cached, 3 cache-busted, of
+~2,300), all `Connection error.`. vLLM's access log shows every request it
+received returned HTTP 200 and the count matches sent-minus-lost exactly — so
+they died between the Mac and the server, most likely in the SSH tunnel under
+that many simultaneous connections. Four isolated 64-request bursts through the
+same tunnel all succeeded, so the mechanism is unproven. They stay in the data
+as `n_failed`; retrying them would have hidden exactly the kind of thing this
+section is about.
+
+**A mid-sweep upload contaminated two cells.** While the first GPU sweep was
+running, a 3 GB `scp` to the same VM saturated the Mac's uplink (11.8 MB/s)
+for four minutes. The Mac is the benchmark client, so its network link is part
+of the measurement. File timestamps on the VM placed the upload at
+14:07:31–14:11:40 UTC; cell-finish timestamps showed exactly two cells,
+`c32 long` and `c64 long`, overlapping it. Both were re-run clean and
+overwritten. (It also cleared the upload of blame for the lost requests above:
+11 of the first 19 happened before it started, and the clean re-run lost 6 more.)
+A benchmark client has to be treated like a lab bench — nothing else runs on it
+during a sweep.
+
 ## What this gallery is not
 
 It is not a claim that this project found every bug or that the ones above

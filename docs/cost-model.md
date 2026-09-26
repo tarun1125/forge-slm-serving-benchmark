@@ -15,7 +15,7 @@ here is invented — see `src/forge/phase3/cost_model.py` for the arithmetic and
 | Mac power draw (active inference) | 75 W | Estimated: 62W CPU sustained load (Notebookcheck, 16" M5 Pro) + system/display overhead |
 | Indian electricity tariff | ₹5.50/kWh | India residential average, FY 2025-26 |
 | Cloud GPU hourly rate | $1.39/hr | RunPod, A100 80GB PCIe, on-demand (Sept 2026) |
-| Cloud GPU throughput scaling | 6.64x | A100 HBM2e (2039 GB/s) / M5 Pro unified memory (307 GB/s) — decode is memory-bandwidth-bound (Phase 2's own headline finding), applied to a REAL measured vllm_metal number. **Estimated, not measured** — the vLLM-on-CUDA arm was deferred. The least certain number in this model. |
+| Cloud GPU throughput scaling | 6.30x | A100 80GB PCIe HBM2e (1,935 GB/s) / M5 Pro unified memory (307 GB/s) — decode is memory-bandwidth-bound (Phase 2's own headline finding), applied to a REAL measured vllm_metal number. **Estimated, not measured, for an A100.** The method itself has now been tested once on real hardware: a T4 (320 GB/s, ~1.04x the M5 Pro's bandwidth) decoded at 0.87x the M5 Pro's per-request rate under vLLM — the bandwidth ratio held to within ~16%. See the Cloud VMs section for the measured T4 row. |
 | Groq input pricing | $0.15/1M tokens | Groq, `openai/gpt-oss-120b`, confirmed live against the real account (Sept 2026) |
 | Groq output pricing | $0.60/1M tokens | Same source |
 | USD→INR | ₹88 | Approximate, Sept 2026 — a daily-fluctuating assumption, flagged as such |
@@ -51,6 +51,7 @@ qualitative story, since idle-power draw is a small fraction of active-inference
 | Arm | Variant | Machine | $/hour | Serving stack | Throughput (tok/s) | Failed | Accuracy | Cost/query @ 10k/mo | Break-even (queries/mo) | VMs @ 1,000,000/mo |
 |---|---|---|---|---|---|---|---|---|---|---|
 | ollama_cloud | q4 | Neoverse-N2 · Standard_D4ps_v6 · centralindia | $0.0924 | ollama 0.32.14 | 18.2 | 0/24 | 50.0% | ₹0.5936 | 300,000 | 2 |
+| vllm_cuda | bf16 | Tesla T4 · Standard_NC4as_T4_v3 · centralindia | $0.5790 | vllm 0.30.0 | 191.0 | 0/24 | 40.0% | ₹3.7195 | 1,000,000 | 1 |
 
 **Hosted API (Groq, gpt-oss-120b):** ₹0.0382/query flat (no utilization dependence), 66.7% accuracy on a real 15-case sample (avg 1469 prompt + 356 completion tokens — completion includes hidden reasoning-model tokens, confirmed live: at max_tokens=300 the model silently burned its entire budget on invisible reasoning on 4 of 15 real requests and returned no visible output at all).
 

@@ -17,7 +17,9 @@ decisions taken along the way, and how they were verified without renting
 anything. **`ollama_cloud` has since been measured** (26 September 2026, Azure
 `Standard_D4ps_v6`, Central India — see the "Cloud VMs" section of
 `docs/cost-model.md` and failure #5 in `docs/failure-gallery.md`).
-**`vllm_cuda` has not**; it is waiting on GPU quota.
+**`vllm_cuda` has too**, the same day, on an Azure `Standard_NC4as_T4_v3` (Tesla
+T4) — see the runbook below for what the real run changed (a missing C compiler,
+the SCP route) and the write-up for the results.
 
 ## Which arm first
 
@@ -600,14 +602,21 @@ the kernel driver.
 
 ```bash
 # on the VM
-sudo apt-get update && sudo apt-get install -y ubuntu-drivers-common tmux
+sudo apt-get update && sudo apt-get install -y ubuntu-drivers-common tmux build-essential
 sudo ubuntu-drivers install
 sudo reboot
 # reconnect, then:
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
 ```
 
-That line is `VLLM_CUDA_GPU_NAME` and `VLLM_CUDA_GPU_MEMORY_GB`. If
+That line is `VLLM_CUDA_GPU_NAME` and `VLLM_CUDA_GPU_MEMORY_GB`.
+`build-essential` is not optional: vLLM compiles kernels at startup (Triton,
+`torch.compile`) and Azure's Ubuntu image ships no C compiler, so without it
+the server dies in its memory-profiling step with `InductorError: Failed to
+find C compiler`. Found on the first real run, 26 September 2026 — on a T4,
+where the `FA2 is only supported on devices with compute capability >= 8`
+line just above it in the log is a red herring (vLLM falls back to Triton
+attention by itself). If
 `ubuntu-drivers` picks nothing, Azure's extension does the same job (from the
 Mac; it reboots the VM itself):
 `az vm extension set -g $RG --vm-name forge-gpu --name NvidiaGpuDriverLinux --publisher Microsoft.HpcCompute`.
@@ -625,8 +634,34 @@ python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_
 The last line must print `True` and the GPU name — otherwise vLLM will fail
 later with a less direct error.
 
-**5. Weights, verified.** From the private repo `upload_fused_bf16` created
-(see "Getting the weights to the VM"):
+**5. Weights, verified.** Two routes. **Copying from the Mac is the one used
+for the real run** — no token ever touches the VM, and the source is the
+directory the local manifest already verified. 3.1 GB took 205 s from India
+to Central India.
+
+```bash
+# on the Mac, from the repo root
+VM_IP=$(az vm show -d -g $RG -n forge-gpu --query publicIps -o tsv)
+
+# 1. prove the source is the verified artifact (must print True)
+uv run python -c "import json; from pathlib import Path; from forge.artifact_hash import hash_directory; \
+m = json.load(open('models/MANIFEST.json')); \
+print('sha256:' + hash_directory(Path('models/fused-bf16')) == next(v['hash'] for v in m['variants'] if v['name'] == 'bf16'))"
+
+# 2. copy
+ssh -i ~/.ssh/forge_azure azureuser@$VM_IP 'mkdir -p ~/models'
+scp -i ~/.ssh/forge_azure -r models/fused-bf16 azureuser@$VM_IP:~/models/
+
+# 3. compare every file, both ends (no output from diff = identical)
+(cd models/fused-bf16 && shasum -a 256 * | sort -k2) > /tmp/forge-local.sha
+ssh -i ~/.ssh/forge_azure azureuser@$VM_IP 'cd ~/models/fused-bf16 && sha256sum * | sort -k2' > /tmp/forge-vm.sha
+diff <(sed 's/  \*\{0,1\}/ /' /tmp/forge-local.sha) <(sed 's/  \*\{0,1\}/ /' /tmp/forge-vm.sha) && echo "all files match"
+```
+
+Run the copy **before** the driver reboot or after it, not across it — a
+reboot mid-`scp` kills the transfer. If your upload is slow, the Hub route
+downloads at datacentre speed instead, from the private repo
+`upload_fused_bf16` created (see "Getting the weights to the VM"):
 
 ```bash
 # on the VM
@@ -636,9 +671,10 @@ hf auth logout             # the token doesn't need to outlive the download
 cd ~/models/fused-bf16 && sha256sum $(ls | grep -v README.md)
 ```
 
-Compare each hash with the per-file SHA-256 table in the repo's model card
-(`README.md`). The `vllm_cuda` arm is gated on the local manifest, but that
-gate proves what is on the *Mac*; this is the only check of what is on the VM.
+For the Hub route, compare each hash with the per-file SHA-256 table in the
+repo's model card (`README.md`). Either way: the `vllm_cuda` arm is gated on
+the local manifest, but that gate proves what is on the *Mac*; this is the only
+check of what is on the VM.
 
 **6. Serve** — inside `tmux`, so a dropped SSH session doesn't kill the server
 mid-sweep:
@@ -730,10 +766,13 @@ az group delete -n $RG --yes --no-wait
 
 ## After a real run, these stop being true
 
-This table is now about `vllm_cuda` only — the `ollama_cloud` run updated the
-README, write-up and failure gallery on 26 September 2026. These places still
-state that the GPU arm was never measured. Measuring it and leaving them is the
-one thing the write-up is built not to do.
+**Done, 26 September 2026** — both arms measured, and every row below was
+updated. Kept as the checklist for the next GPU (an A100 run would retire the
+estimated row outright): the README, write-up and failure gallery narrative;
+`build_report`'s assumptions row, which now uses the A100 **PCIe** bandwidth
+(1,935 GB/s) and cites the T4 test; the "Cloud VMs" table, regenerated from the
+rows. `LOCAL_VARIANTS` is intentionally still three arms — cloud rows go through
+`CLOUD_VM_VARIANTS`.
 
 | Where | What says it |
 |---|---|

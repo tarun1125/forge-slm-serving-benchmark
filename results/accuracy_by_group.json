@@ -279,6 +279,42 @@
     ],
     "accuracy_method": "per_case_mean_request_weighted"
   },
+  "vllm_cuda/bf16/long": {
+    "arm": "vllm_cuda",
+    "model_variant": "bf16",
+    "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
+    "n_unique_generations": 10,
+    "correct_case_credit": 2.0,
+    "execution_accuracy": 0.2,
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
+  },
+  "vllm_cuda/bf16/medium": {
+    "arm": "vllm_cuda",
+    "model_variant": "bf16",
+    "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
+    "n_unique_generations": 10,
+    "correct_case_credit": 4.0,
+    "execution_accuracy": 0.4,
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
+  },
+  "vllm_cuda/bf16/short": {
+    "arm": "vllm_cuda",
+    "model_variant": "bf16",
+    "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
+    "n_unique_generations": 10,
+    "correct_case_credit": 0.0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
+  },
   "vllm_metal/4bit/long": {
     "arm": "vllm_metal",
     "model_variant": "4bit",
