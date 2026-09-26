@@ -4,10 +4,10 @@
 
 A LoRA fine-tuned Qwen2.5-Coder-1.5B, measured for latency, throughput, quality, and cost per
 1,000 queries across four real serving arms — Apple Silicon MLX, Ollama, vLLM on Metal, and a
-hosted API — plus the same Ollama stack measured on a rented Azure Arm CPU (Cobalt 100). A
-cloud-GPU (vLLM on CUDA) arm is wired with a full Azure runbook but not yet run; until it is, its
-cost-model line is a documented scaling factor applied to the real vllm_metal numbers, called
-out as an estimate everywhere it appears in `docs/cost-model.md`.
+hosted API — plus two rented Azure machines: the same Ollama stack on an Arm CPU (Cobalt 100)
+and vLLM on a Tesla T4 GPU. The cost model's A100 line remains an estimate (bandwidth-scaled
+from the real vllm_metal numbers), now backed by one real test of that method: the T4, with
+near-identical memory bandwidth to the M5 Pro, decoded at 0.87x its rate.
 
 **Headline finding this benchmark is built to surface:** prefill (TTFT) is compute-bound;
 decode (inter-token latency) is memory-bandwidth-bound. They do not scale the same way, and
@@ -22,12 +22,13 @@ missing, and both are documented rather than quietly dropped:
 
 - **No live hosted demo.** The Gradio app runs locally. Hosting it on a free-CPU Hugging Face
   Space now requires HF PRO, which this project isn't paying for — see `space/README.md`.
-- **Cloud CPU measured; cloud GPU pending.** `ollama_cloud` ran on an Azure
-  `Standard_D4ps_v6` (4× Neoverse-N2) with the same Ollama version, GGUF (sha256-verified) and
-  daemon settings as the Mac: 0 failures, decode 6–8x slower, cheaper per query at 10k/month.
-  `vllm_cuda` is waiting on GPU quota; its cost-model line stays an estimate until then. See
-  [docs/cloud-arm.md](docs/cloud-arm.md) for the runbooks and the "Cloud VMs" section of
-  [docs/cost-model.md](docs/cost-model.md) for the numbers.
+- **Cloud CPU and cloud GPU measured** (26 September 2026, Azure Central India).
+  `ollama_cloud` on a `Standard_D4ps_v6` (4× Neoverse-N2), same Ollama version, GGUF and daemon
+  settings as the Mac: decode 6–8x slower, cheaper per query at 10k/month. `vllm_cuda` on a
+  `Standard_NC4as_T4_v3` (Tesla T4, fp16): decode 0.87x the M5 Pro, scales to concurrency 64,
+  the only single machine here that serves 1M queries/month. Weights sha256-verified on both
+  VMs. See [docs/cloud-arm.md](docs/cloud-arm.md) for the runbooks and the "Cloud VMs" section
+  of [docs/cost-model.md](docs/cost-model.md) for the numbers.
 - **Two sets of TTFT numbers.** The cloud run showed the original sweep's long-prompt TTFT was
   partly measuring prompt-cache hits. Every local arm was re-measured with
   `--bust-prompt-cache` (results in `results/sweep_cold/`); the write-up reports both, labelled,
@@ -74,7 +75,7 @@ arms should also use `--max-retries 0` — a retried request's TTFT silently inc
 attempt.
 
 Two cloud arms, `ollama_cloud` (commodity CPU, **measured on Azure Cobalt 100**) and `vllm_cuda`
-(rented NVIDIA GPU, **pending quota**). See [docs/cloud-arm.md](docs/cloud-arm.md) for their
+(rented NVIDIA GPU, **measured on an Azure T4**). See [docs/cloud-arm.md](docs/cloud-arm.md) for their
 design decisions, the `az` provisioning commands, both runbooks, and the local dry-run procedure.
 
 ## Phase 3 — cost model
