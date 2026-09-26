@@ -11,7 +11,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # env_ignore_empty: .env.example ships the optional numeric fields blank
+    # (OLLAMA_CLOUD_MEMORY_GB=, VLLM_CUDA_HOURLY_USD=, ...), and without this a
+    # verbatim copy makes Settings() raise float_parsing on "" — breaking every
+    # entrypoint, not just the cloud arms. Blank now means unset, i.e. None.
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore", env_ignore_empty=True
+    )
 
     log_level: str = "INFO"
     # sqlite, not the plain "./mlruns" folder store the master plan/handoff
@@ -45,6 +51,9 @@ class Settings(BaseSettings):
     vllm_cuda_gpu_memory_gb: float | None = None  # -> ServerHardware.processor_memory_gb
     vllm_cuda_gpu_memory_bandwidth_gb_s: float | None = None
     vllm_cuda_hourly_usd: float | None = None
+    # The `vllm serve` flags used on the VM, as JSON — e.g.
+    # {"max_num_seqs": 256, "dtype": "bfloat16"}. -> ServerSoftware.settings
+    vllm_cuda_server_args: dict[str, str | int | float | bool] | None = None
 
     # --- Phase 2, arm 6: Ollama on a rented cloud CPU ---
     # The same daemon, Modelfile and tag as the local `ollama` arm, on
@@ -59,6 +68,12 @@ class Settings(BaseSettings):
     ollama_cloud_memory_gb: float | None = None
     ollama_cloud_memory_bandwidth_gb_s: float | None = None
     ollama_cloud_hourly_usd: float | None = None
+    # The daemon's OLLAMA_* env on each end, as JSON — e.g.
+    # {"OLLAMA_NUM_PARALLEL": 4, "OLLAMA_FLASH_ATTENTION": 1}. Neither daemon
+    # reports these, and they must match for the two Ollama arms to differ
+    # only in hardware. -> ServerSoftware.settings
+    ollama_server_env: dict[str, str | int | float | bool] | None = None
+    ollama_cloud_server_env: dict[str, str | int | float | bool] | None = None
 
     # --- Phase 4: HF Hub model upload + Space deploy ---
     hf_token: str | None = None

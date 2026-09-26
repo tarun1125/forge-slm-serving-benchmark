@@ -24,6 +24,7 @@ reason unrelated to the model actually being broken.
 from __future__ import annotations
 
 import os
+import threading
 from pathlib import Path
 
 import gradio as gr
@@ -56,7 +57,17 @@ EXAMPLE_QUESTIONS = [
 # (Phase 5) — not as a default example a first-time visitor clicks and
 # concludes the demo itself is broken.
 
+# A visitor question is ~20 tokens; this caps what one request can push into
+# the shared 8192-token context (a paste of a whole document would otherwise
+# overflow n_ctx and raise) and bounds how long one visitor holds the model.
+MAX_QUESTION_CHARS = 500
+
 _llm: Llama | None = None
+# One Llama instance serves every visitor, and it is not thread-safe: reset()
+# from a second request mid-generation corrupts the first one's KV cache.
+# Gradio gives each event listener its own concurrency slot, so the button
+# click and the textbox submit below could otherwise run at the same time.
+_llm_lock = threading.Lock()
 
 
 def get_model() -> Llama:
@@ -67,7 +78,8 @@ def get_model() -> Llama:
         )
         _llm = Llama(
             model_path=model_path,
-            # see fine_tuning/ollama_register.py's own note on Ollama's default 4096 being too small
+            # see src/forge/phase1/ollama_register.py's note on Ollama's 4096 default
+            # being too small
             n_ctx=8192,
             n_threads=4,
             verbose=False,
@@ -76,8 +88,16 @@ def get_model() -> Llama:
 
 
 def generate_query(question: str) -> str:
-    if not question.strip():
+    question = question.strip()
+    if not question:
         return ""
+    if len(question) > MAX_QUESTION_CHARS:
+        return f"# Question too long ({len(question)} chars) — keep it under {MAX_QUESTION_CHARS}."
+    with _llm_lock:
+        return _generate_locked(question)
+
+
+def _generate_locked(question: str) -> str:
     llm = get_model()
     # llama-cpp-python's Llama object keeps its KV cache / token history across
     # calls on the same instance. Since this Space reuses one global _llm for
@@ -112,7 +132,9 @@ with gr.Blocks(title="FORGE — NL to MongoDB") as demo:
     )
     with gr.Row():
         question = gr.Textbox(
-            label="Question", placeholder="e.g. return the smallest salary for every department."
+            label="Question",
+            placeholder="e.g. return the smallest salary for every department.",
+            max_length=MAX_QUESTION_CHARS,
         )
     generate_btn = gr.Button("Generate PyMongo query", variant="primary")
     output = gr.Code(label="Generated query", language="python")

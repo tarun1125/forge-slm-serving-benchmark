@@ -20,9 +20,12 @@ for presenting a curve, not a number.
 
 from __future__ import annotations
 
+import math
+from collections.abc import Callable
 from dataclasses import dataclass
 
 HOURS_PER_YEAR = 365 * 24
+HOURS_PER_MONTH = HOURS_PER_YEAR / 12  # 730 — how cloud providers bill a "month"
 SECONDS_PER_HOUR = 3600
 
 
@@ -156,6 +159,66 @@ def cloud_gpu_cost_per_query(
     return cost_per_query_usd * assumptions.usd_to_inr
 
 
+@dataclass(frozen=True)
+class CloudVmCostBreakdown:
+    monthly_query_volume: int
+    n_vms: int  # always-on VMs needed to serve the volume
+    utilization: float  # fraction of the rented capacity actually used
+    total_cost_inr: float  # per query
+
+
+def cloud_vm_cost_per_query(
+    hourly_usd: float,
+    usd_to_inr: float,
+    throughput_tokens_per_sec: float,
+    avg_completion_tokens: float,
+    monthly_query_volume: int,
+) -> CloudVmCostBreakdown:
+    """A rented VM, priced from MEASURED throughput — the counterpart to
+    cloud_gpu_cost_per_query(), which has to extrapolate. No scaling factor,
+    because the sweep ran on the VM itself (the ollama_cloud arm), and no
+    Mac-specific assumptions: the hourly rate comes from the result rows'
+    own server_hardware.hourly_usd, recorded at sweep time.
+
+    Modeled as always-on, which is how a self-hosted endpoint is actually
+    run: each VM bills HOURS_PER_MONTH hours whether or not it is busy, so
+    cost per query falls as 1/volume — the same declining-curve shape as the
+    local Mac, which is what makes the two comparable on one chart. Past one
+    VM's capacity it scales out in whole VMs (ceil), so the curve is a
+    sawtooth that bottoms out at the fully-utilized cost, rather than
+    pretending demand beyond capacity is free.
+    """
+    if throughput_tokens_per_sec <= 0 or avg_completion_tokens <= 0:
+        raise ValueError("throughput and avg_completion_tokens must be positive")
+    if hourly_usd <= 0:
+        raise ValueError("hourly_usd must be positive")
+    if monthly_query_volume <= 0:
+        raise ValueError("monthly_query_volume must be positive")
+
+    capacity_per_vm = (
+        throughput_tokens_per_sec * SECONDS_PER_HOUR * HOURS_PER_MONTH / avg_completion_tokens
+    )
+    n_vms = max(1, math.ceil(monthly_query_volume / capacity_per_vm))
+    monthly_cost_usd = n_vms * hourly_usd * HOURS_PER_MONTH
+    return CloudVmCostBreakdown(
+        monthly_query_volume=monthly_query_volume,
+        n_vms=n_vms,
+        utilization=monthly_query_volume / (n_vms * capacity_per_vm),
+        total_cost_inr=monthly_cost_usd * usd_to_inr / monthly_query_volume,
+    )
+
+
+def first_volume_at_or_below(
+    cost_at_volume: Callable[[int], float], target_cost: float, volume_grid: list[int]
+) -> int | None:
+    """Smallest volume in the grid whose cost per query is <= target_cost —
+    the break-even search, independent of which cost curve it runs on."""
+    for volume in sorted(volume_grid):
+        if cost_at_volume(volume) <= target_cost:
+            return volume
+    return None
+
+
 def find_break_even_volume(
     assumptions: CostAssumptions,
     throughput_tokens_per_sec: float,
@@ -180,13 +243,15 @@ def find_break_even_volume(
     300,000). The caller now computes the hosted baseline once, correctly,
     and passes the single number in — impossible to accidentally cross the
     streams between two different workloads' token counts this way."""
-    for volume in sorted(volume_grid):
-        local = local_cost_per_query(
-            assumptions, throughput_tokens_per_sec, avg_completion_tokens, volume
-        )
-        if local.total_cost_inr <= hosted_cost_per_query_inr:
-            return volume
-    return None
+    return first_volume_at_or_below(
+        lambda volume: (
+            local_cost_per_query(
+                assumptions, throughput_tokens_per_sec, avg_completion_tokens, volume
+            ).total_cost_inr
+        ),
+        hosted_cost_per_query_inr,
+        volume_grid,
+    )
 
 
 def cost_per_accuracy_point(cost_per_query_inr: float, execution_accuracy: float) -> float | None:

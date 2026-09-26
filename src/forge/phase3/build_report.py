@@ -17,13 +17,16 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+from forge.config import get_settings
 from forge.logging_config import configure_logging, get_logger, start_run
 from forge.phase2.metrics import aggregate
 from forge.phase2.result_schema import RequestResult
 from forge.phase3.cost_model import (
     CostAssumptions,
+    cloud_vm_cost_per_query,
     cost_per_accuracy_point,
     find_break_even_volume,
+    first_volume_at_or_below,
     hosted_api_cost_per_query,
     local_cost_per_query,
 )
@@ -44,6 +47,19 @@ LOCAL_VARIANTS = {
     "mlx_lm": ["bf16", "8bit", "4bit"],
     "ollama": ["f16", "q8", "q4"],
     "vllm_metal": ["bf16", "8bit", "4bit"],
+}
+# Arms that ran on a rented VM (docs/cloud-arm.md) — CPU or GPU, priced the
+# same way: from their own measured throughput and the hourly rate recorded on
+# their rows — see load_cloud_cell(). Optional: a cell that was never run is
+# skipped, and the report says so, rather than the build failing before the
+# cloud run exists. The value is the .env setting used as the rate fallback.
+CLOUD_VM_VARIANTS = {
+    "ollama_cloud": ["q4"],
+    "vllm_cuda": ["bf16"],
+}
+HOURLY_RATE_SETTING = {
+    "ollama_cloud": "ollama_cloud_hourly_usd",
+    "vllm_cuda": "vllm_cuda_hourly_usd",
 }
 REPRESENTATIVE_CONCURRENCY = 8  # a stated choice — see docs/cost-model.md
 REPRESENTATIVE_BUCKET = "medium"  # matches the model's own training-prompt shape
@@ -80,9 +96,7 @@ BREAK_EVEN_VOLUME_GRID = [
 def load_local_cell(arm: str, variant: str) -> tuple[float, float, float]:
     """Returns (throughput_tokens_per_sec, avg_prompt_tokens, avg_completion_tokens)
     for one (arm, variant) at the representative concurrency/bucket."""
-    path = (
-        SWEEP_DIR / f"{arm}_{variant}_c{REPRESENTATIVE_CONCURRENCY}_{REPRESENTATIVE_BUCKET}.jsonl"
-    )
+    path = _cell_path(arm, variant)
     rows = [
         RequestResult(**json.loads(line)) for line in path.read_text(encoding="utf-8").splitlines()
     ]
@@ -93,6 +107,120 @@ def load_local_cell(arm: str, variant: str) -> tuple[float, float, float]:
     if metrics.throughput_tokens_per_sec is None:
         raise RuntimeError(f"No throughput computed for {arm}/{variant} — check {path}")
     return metrics.throughput_tokens_per_sec, avg_prompt, avg_completion
+
+
+def _cell_path(arm: str, variant: str) -> Path:
+    return (
+        SWEEP_DIR / f"{arm}_{variant}_c{REPRESENTATIVE_CONCURRENCY}_{REPRESENTATIVE_BUCKET}.jsonl"
+    )
+
+
+def load_cloud_cell(arm: str, variant: str) -> dict | None:
+    """One cloud-VM cell at the representative concurrency/bucket, or None if
+    that cell was never run. Everything needed to price it comes off the rows
+    themselves — throughput, token counts, and the machine and its hourly rate
+    from server_hardware — so the cost is tied to the VM that produced the
+    numbers, not to whatever .env says today. The one fallback is the rate:
+    rows written without OLLAMA_CLOUD_HOURLY_USD set take it from .env, and
+    the row says so (hourly_usd_source)."""
+    path = _cell_path(arm, variant)
+    if not path.exists():
+        log.info("build_report.cloud_cell_missing", arm=arm, variant=variant, path=str(path))
+        return None
+    rows = [
+        RequestResult(**json.loads(line)) for line in path.read_text(encoding="utf-8").splitlines()
+    ]
+    machines = {r.server_hardware for r in rows}
+    if len(machines) != 1 or None in machines:
+        raise RuntimeError(
+            f"{path}: rows must all carry the same server_hardware, got {len(machines)} "
+            "distinct values — a cell mixing machines has no single price."
+        )
+    machine = machines.pop()
+    assert machine is not None  # narrowed above; for mypy
+    metrics = aggregate(rows)
+    succeeded = [r for r in rows if r.succeeded]
+    if not succeeded or metrics.throughput_tokens_per_sec is None:
+        raise RuntimeError(f"No successful requests in {path} — nothing to price.")
+
+    hourly_usd, hourly_source = machine.hourly_usd, "recorded on result rows"
+    if hourly_usd is None:
+        setting = HOURLY_RATE_SETTING[arm]
+        hourly_usd, hourly_source = getattr(get_settings(), setting), ".env at report time"
+        if hourly_usd is None:
+            raise RuntimeError(
+                f"{path} has no server_hardware.hourly_usd and {setting.upper()} is "
+                "unset — set it to the rate you were billed; a cloud row can't be priced "
+                "without it."
+            )
+    versions = sorted(
+        {
+            f"{r.server_software.stack} {r.server_software.version or '?'}"
+            for r in rows
+            if r.server_software
+        }
+    )
+    return {
+        "arm": arm,
+        "variant": variant,
+        "processor": machine.processor,
+        "provider": machine.provider,
+        "instance_type": machine.instance_type,
+        "region": machine.region,
+        "hourly_usd": hourly_usd,
+        "hourly_usd_source": hourly_source,
+        "server_software": versions,
+        "throughput_tokens_per_sec": metrics.throughput_tokens_per_sec,
+        "avg_prompt_tokens": sum(r.prompt_tokens or 0 for r in succeeded) / len(succeeded),
+        "avg_completion_tokens": sum(r.completion_tokens or 0 for r in succeeded) / len(succeeded),
+        "n_requests": metrics.n_requests,
+        "n_failed": metrics.n_failed,
+    }
+
+
+def build_cloud_vm_table(hosted_cost_per_query_inr: float) -> list[dict]:
+    rows = []
+    for arm, variants in CLOUD_VM_VARIANTS.items():
+        for variant in variants:
+            cell = load_cloud_cell(arm, variant)
+            if cell is None:
+                continue
+
+            def cost_at(volume: int, cell: dict = cell) -> float:
+                return cloud_vm_cost_per_query(
+                    cell["hourly_usd"],
+                    ASSUMPTIONS.usd_to_inr,
+                    cell["throughput_tokens_per_sec"],
+                    cell["avg_completion_tokens"],
+                    volume,
+                ).total_cost_inr
+
+            accuracy = load_accuracy(arm, variant)
+            cost_at_10k = cost_at(10_000)
+            at_max_volume = cloud_vm_cost_per_query(
+                cell["hourly_usd"],
+                ASSUMPTIONS.usd_to_inr,
+                cell["throughput_tokens_per_sec"],
+                cell["avg_completion_tokens"],
+                max(BREAK_EVEN_VOLUME_GRID),
+            )
+            rows.append(
+                {
+                    **cell,
+                    "execution_accuracy": accuracy,
+                    "cost_per_query_inr_at_10k_monthly": cost_at_10k,
+                    "break_even_monthly_volume": first_volume_at_or_below(
+                        cost_at, hosted_cost_per_query_inr, BREAK_EVEN_VOLUME_GRID
+                    ),
+                    "cost_per_accuracy_point_inr": (
+                        cost_per_accuracy_point(cost_at_10k, accuracy)
+                        if accuracy is not None
+                        else None
+                    ),
+                    "vms_needed_at_max_volume": at_max_volume.n_vms,
+                }
+            )
+    return rows
 
 
 def load_accuracy(arm: str, variant: str) -> float | None:
@@ -161,7 +289,7 @@ def build_results_table(hosted_cost_per_query_inr: float) -> list[dict]:
     return rows
 
 
-def render_chart(results: list[dict], hosted_cost: float) -> None:
+def render_chart(results: list[dict], hosted_cost: float, cloud_rows: list[dict]) -> None:
     fig, ax = plt.subplots(figsize=(9, 6))
     volumes = BREAK_EVEN_VOLUME_GRID
 
@@ -211,6 +339,30 @@ def render_chart(results: list[dict], hosted_cost: float) -> None:
             label=f"{arm} ({row['variant']}, fastest)",
         )
 
+    # Measured cloud-VM curves. Kept out of max_relative_spread above: that
+    # number describes why the LOCAL lines overlap, and a rented VM's cost
+    # structure (billed hours, not amortized purchase) is a different story.
+    for row in cloud_rows:
+        costs = [
+            cloud_vm_cost_per_query(
+                row["hourly_usd"],
+                ASSUMPTIONS.usd_to_inr,
+                row["throughput_tokens_per_sec"],
+                row["avg_completion_tokens"],
+                v,
+            ).total_cost_inr
+            for v in volumes
+        ]
+        machine = row["instance_type"] or row["processor"]
+        ax.plot(
+            volumes,
+            costs,
+            marker="s",
+            linestyle="-",
+            linewidth=2,
+            label=f"{row['arm']} ({row['variant']}, {machine}, ${row['hourly_usd']:.3f}/h)",
+        )
+
     ax.axhline(hosted_cost, color="black", linestyle="-.", label="Groq (gpt-oss-120b), hosted API")
     ax.set_xscale("log")
     ax.set_yscale("log")
@@ -226,7 +378,7 @@ def render_chart(results: list[dict], hosted_cost: float) -> None:
     # throughput differences of up to 3x between arms produce a real but tiny
     # cost difference, well under 1% at every point plotted.
     ax.annotate(
-        f"All three self-hosting lines overlap here on purpose:\n"
+        f"All three local self-hosting lines overlap here on purpose:\n"
         f"cost differs by <{max_relative_spread:.1%} between arms at every\n"
         f"volume plotted — hardware amortization dominates until\n"
         f"a machine nears its lifetime throughput capacity, which\n"
@@ -244,7 +396,65 @@ def render_chart(results: list[dict], hosted_cost: float) -> None:
     plt.close(fig)
 
 
-def render_doc(results: list[dict], groq_row: dict, hosted_cost: float) -> str:
+def render_cloud_vm_section(cloud_rows: list[dict]) -> list[str]:
+    lines = [
+        "",
+        "## Cloud VMs — measured on rented hardware",
+        "",
+    ]
+    if not cloud_rows:
+        return lines + [
+            "Not measured yet. Run the `ollama_cloud` (CPU) or `vllm_cuda` (GPU) arm — see "
+            "`docs/cloud-arm.md` — and re-run this script; this section and its curves fill "
+            "in from the result rows.",
+        ]
+    lines += [
+        "`ollama_cloud` is the same Ollama daemon, Modelfile and GGUF as the local `ollama` "
+        "arm on a rented CPU; `vllm_cuda` is vLLM serving the bf16 checkpoint on a rented "
+        "GPU. Priced as an **always-on** VM at the hourly rate recorded on the result rows: cost "
+        "per query falls as 1/volume until one VM is saturated, then scales out in whole VMs. "
+        "Throughput is measured from the Mac across an SSH tunnel; the round trip lands in "
+        "TTFT, not materially in tokens/sec. No scaling factor — unlike the estimated "
+        "cloud-GPU row in the assumptions table, nothing here is extrapolated.",
+        "",
+        "| Arm | Variant | Machine | $/hour | Serving stack | Throughput (tok/s) | "
+        "Failed | Accuracy | Cost/query @ 10k/mo | Break-even (queries/mo) | "
+        f"VMs @ {max(BREAK_EVEN_VOLUME_GRID):,}/mo |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for row in cloud_rows:
+        machine = " · ".join(
+            str(x) for x in (row["processor"], row["instance_type"], row["region"]) if x
+        )
+        acc = f"{row['execution_accuracy']:.1%}" if row["execution_accuracy"] is not None else "N/A"
+        be = (
+            f"{row['break_even_monthly_volume']:,}"
+            if row["break_even_monthly_volume"]
+            else "never (in grid)"
+        )
+        rate = f"${row['hourly_usd']:.4f}" + (
+            "" if row["hourly_usd_source"] == "recorded on result rows" else " (from .env)"
+        )
+        lines.append(
+            f"| {row['arm']} | {row['variant']} | {machine} | {rate} | "
+            f"{', '.join(row['server_software']) or 'unrecorded'} | "
+            f"{row['throughput_tokens_per_sec']:.1f} | {row['n_failed']}/{row['n_requests']} | "
+            f"{acc} | ₹{row['cost_per_query_inr_at_10k_monthly']:.4f} | {be} | "
+            f"{row['vms_needed_at_max_volume']} |"
+        )
+    if any(row["n_failed"] for row in cloud_rows):
+        lines += [
+            "",
+            "**Failed requests are excluded from throughput.** A cell with failures measured "
+            "a server past its capacity, so its tokens/sec is the surviving requests' rate, not "
+            "a clean saturation number.",
+        ]
+    return lines
+
+
+def render_doc(
+    results: list[dict], groq_row: dict, hosted_cost: float, cloud_rows: list[dict]
+) -> str:
     lines = [
         "# Cost model",
         "",
@@ -304,6 +514,7 @@ def render_doc(results: list[dict], groq_row: dict, hosted_cost: float) -> str:
             f"{acc_str} | {cost_str} | {break_even_str} | {cpa_str} |"
         )
 
+    lines += render_cloud_vm_section(cloud_rows)
     lines += [
         "",
         f"**Hosted API (Groq, gpt-oss-120b):** ₹{hosted_cost:.4f}/query flat (no utilization "
@@ -358,20 +569,27 @@ def main() -> None:
     groq_avg_prompt, groq_avg_completion, groq_accuracy = load_groq_sample()
     hosted_cost = hosted_api_cost_per_query(ASSUMPTIONS, groq_avg_prompt, groq_avg_completion)
     results = build_results_table(hosted_cost)
+    cloud_rows = build_cloud_vm_table(hosted_cost)
     groq_row = {
         "avg_prompt_tokens": groq_avg_prompt,
         "avg_completion_tokens": groq_avg_completion,
         "execution_accuracy": groq_accuracy,
     }
 
-    render_chart(results, hosted_cost)
-    doc = render_doc(results, groq_row, hosted_cost)
+    render_chart(results, hosted_cost, cloud_rows)
+    doc = render_doc(results, groq_row, hosted_cost, cloud_rows)
     OUTPUT_DOC.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_DOC.write_text(doc, encoding="utf-8")
 
     OUTPUT_RESULTS_TABLE.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_RESULTS_TABLE.write_text(
-        json.dumps({"local_variants": results, "hosted_api": groq_row}, indent=2),
+        # cloud_vm is its own key, not appended to local_variants: the
+        # notebook indexes local_variants rows by arm name and would KeyError
+        # on an arm it doesn't know.
+        json.dumps(
+            {"local_variants": results, "cloud_vm": cloud_rows, "hosted_api": groq_row},
+            indent=2,
+        ),
         encoding="utf-8",
     )
 

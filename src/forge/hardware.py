@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import platform
 import subprocess
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from functools import lru_cache
 
 
@@ -64,6 +64,29 @@ class ServerHardware:
     processor_memory_gb: float | None = None
     memory_bandwidth_gb_s: float | None = None
     hourly_usd: float | None = None
+
+
+@dataclass(frozen=True)
+class ServerSoftware:
+    """What served the request, as opposed to what it ran on.
+
+    Lives beside ServerHardware because it answers the same question — could
+    two rows differ for a reason the data doesn't show? — for the half of the
+    answer hardware can't: the `ollama` and `ollama_cloud` arms exist to hold
+    the serving stack constant, and that claim is only checkable if each row
+    says which version ran and with which daemon settings (OLLAMA_NUM_PARALLEL
+    alone decides whether concurrency 8 is batching or queueing).
+
+    `version` is detected from the live server where it exposes one (Ollama's
+    /api/version, vLLM's /version) — see server_lifecycle — rather than typed
+    by hand. `settings` cannot be detected (neither server reports its own
+    env), so for daemons this process doesn't launch it comes from .env; for
+    servers it does launch, it is the launch flags themselves.
+    """
+
+    stack: str  # "ollama", "vllm", "vllm-metal", "mlx_lm.server"
+    version: str | None = None
+    settings: dict[str, str] = field(default_factory=dict)
 
 
 def _sysctl(name: str) -> str | None:

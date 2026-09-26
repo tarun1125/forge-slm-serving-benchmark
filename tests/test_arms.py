@@ -217,3 +217,53 @@ class TestOllamaCloudSweepWiring:
         assert arm.name == "ollama_cloud"
         assert arm.server_hardware is not None
         assert arm.server_hardware.processor == "AWS Graviton4"
+
+
+class TestSettingsBlankValues:
+    def test_blank_optional_numbers_from_env_example_mean_unset(self, tmp_path, monkeypatch):
+        """.env.example ships OLLAMA_CLOUD_MEMORY_GB= etc. blank; a verbatim
+        copy used to make Settings() raise float_parsing on every entrypoint."""
+        (tmp_path / ".env").write_text(
+            "OLLAMA_CLOUD_MEMORY_GB=\nOLLAMA_CLOUD_HOURLY_USD=\nVLLM_CUDA_GPU_MEMORY_GB=\n",
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+        settings = Settings()
+        assert settings.ollama_cloud_memory_gb is None
+        assert settings.ollama_cloud_hourly_usd is None
+        assert settings.vllm_cuda_gpu_memory_gb is None
+
+
+class TestServerSoftware:
+    def test_cloud_daemon_settings_come_from_settings_as_strings(self):
+        arm = ollama_cloud_arm(
+            "q4",
+            settings=_settings(
+                ollama_cloud_server_env={"OLLAMA_NUM_PARALLEL": 4, "OLLAMA_FLASH_ATTENTION": True}
+            ),
+        )
+        assert arm.server_software is not None
+        assert arm.server_software.stack == "ollama"
+        assert arm.server_software.settings == {
+            "OLLAMA_NUM_PARALLEL": "4",
+            "OLLAMA_FLASH_ATTENTION": "True",
+        }
+        assert arm.server_software.version is None  # detected later, from the live server
+        assert arm.version_path == "/api/version"
+
+    def test_server_env_json_parses_from_the_environment(self, monkeypatch):
+        monkeypatch.setenv("OLLAMA_CLOUD_SERVER_ENV", '{"OLLAMA_NUM_PARALLEL": 4}')
+        assert Settings().ollama_cloud_server_env == {"OLLAMA_NUM_PARALLEL": 4}
+
+    def test_vllm_cuda_records_its_serve_args(self):
+        arm = vllm_cuda_arm("bf16", settings=_settings(vllm_cuda_server_args={"dtype": "bfloat16"}))
+        assert arm.server_software is not None
+        assert arm.server_software.stack == "vllm"
+        assert arm.server_software.settings == {"dtype": "bfloat16"}
+
+    def test_launched_arms_record_their_launch_flags(self):
+        mlx = mlx_lm_arm("bf16").server_software
+        vllm = vllm_metal_arm("bf16").server_software
+        assert mlx is not None and mlx.settings["decode_concurrency"] == "1"
+        assert mlx.version is not None  # mlx-lm is installed in this venv
+        assert vllm is not None and vllm.settings["max_num_seqs"] == "256"

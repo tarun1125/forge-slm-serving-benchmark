@@ -26,10 +26,19 @@ no-batching baseline). MLX_LM_ARGS below forces --decode-concurrency 1
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from importlib import metadata
 from pathlib import Path
 
 from forge.config import Settings
-from forge.hardware import ServerHardware
+from forge.hardware import ServerHardware, ServerSoftware
+from forge.logging_config import get_logger
+
+log = get_logger(__name__)
+
+# Relative to the server ROOT (base_url minus "/v1"), not to base_url — these
+# are each server's own endpoints, outside the OpenAI-compatible surface.
+OLLAMA_VERSION_PATH = "/api/version"
+VLLM_VERSION_PATH = "/version"
 
 MODELS_DIR = Path("models")
 
@@ -74,6 +83,22 @@ class ArmConfig:
     # sentinel. Set only for arms that serve from somewhere else; client.py
     # copies it onto every RequestResult. See hardware.ServerHardware.
     server_hardware: ServerHardware | None = None
+    # Stack, version and settings of whatever served the request — see
+    # hardware.ServerSoftware. version is usually None here and filled in by
+    # server_lifecycle from version_path once the server is reachable.
+    server_software: ServerSoftware | None = None
+    version_path: str | None = None
+
+
+def _package_version(name: str) -> str | None:
+    try:
+        return metadata.version(name)
+    except metadata.PackageNotFoundError:
+        return None
+
+
+def _stringify(settings: dict[str, str | int | float | bool] | None) -> dict[str, str]:
+    return {k: str(v) for k, v in (settings or {}).items()}
 
 
 def mlx_lm_arm(model_variant: str, port: int = 8080) -> ArmConfig:
@@ -94,10 +119,23 @@ def mlx_lm_arm(model_variant: str, port: int = 8080) -> ArmConfig:
             "--prompt-concurrency",
             "1",
         ],
+        # mlx_lm.server has no version endpoint, but it runs from this venv,
+        # so the installed package version is the served version.
+        server_software=ServerSoftware(
+            stack="mlx_lm.server",
+            version=_package_version("mlx-lm"),
+            settings={"decode_concurrency": "1", "prompt_concurrency": "1"},
+        ),
     )
 
 
-def ollama_arm(model_variant: str, port: int = 11434) -> ArmConfig:
+def ollama_arm(
+    model_variant: str, port: int = 11434, settings: Settings | None = None
+) -> ArmConfig:
+    if settings is None:
+        from forge.config import get_settings
+
+        settings = get_settings()
     model_id = OLLAMA_MODEL_VARIANTS[model_variant]
     return ArmConfig(
         name="ollama",
@@ -105,6 +143,10 @@ def ollama_arm(model_variant: str, port: int = 11434) -> ArmConfig:
         base_url=f"http://127.0.0.1:{port}/v1",
         model_id=model_id,
         launch_command=None,  # `ollama serve` is a persistent daemon, started once, not per-sweep
+        server_software=ServerSoftware(
+            stack="ollama", settings=_stringify(settings.ollama_server_env)
+        ),
+        version_path=OLLAMA_VERSION_PATH,
     )
 
 
@@ -136,6 +178,16 @@ def vllm_metal_arm(
             str(gpu_memory_utilization),
         ],
         extra_request_params={"max_num_seqs": max_num_seqs},
+        # vllm-metal lives in its own venv, so its version comes from the
+        # running server (VLLM_VERSION_PATH), not this process's packages.
+        server_software=ServerSoftware(
+            stack="vllm-metal",
+            settings={
+                "max_num_seqs": str(max_num_seqs),
+                "gpu_memory_utilization": str(gpu_memory_utilization),
+            },
+        ),
+        version_path=VLLM_VERSION_PATH,
     )
 
 
@@ -149,6 +201,8 @@ def _remote_arm(
     base_url_env: str,
     processor_env: str,
     processor_probe: str,
+    server_software: ServerSoftware,
+    version_path: str,
     api_key: str | None = None,
     provider: str | None = None,
     instance_type: str | None = None,
@@ -164,10 +218,10 @@ def _remote_arm(
 
     launch_command is always None here: the server is already running
     somewhere else, so ManagedServer treats these exactly as it treats Ollama
-    and the hosted API — a no-op start and stop. That also means nothing
-    health-checks the endpoint before a sweep starts. Curl base_url +
-    "/models" yourself first; a dead tunnel otherwise produces a completed run
-    of failed rows rather than an error.
+    and the hosted API — a no-op start and stop, plus a one-shot preflight
+    (ManagedServer._preflight_remote) that refuses to start unless base_url +
+    "/models" answers and lists model_id. A tunnel that drops mid-sweep still
+    produces failed rows rather than an abort.
 
     Both refusals exist for the same reason. A missing base URL fails fast
     instead of at the first request; a missing processor name would produce
@@ -187,6 +241,14 @@ def _remote_arm(
             f"run `{processor_probe}` on the VM. See hardware.ServerHardware and "
             "docs/cloud-arm.md."
         )
+    if not server_software.settings:
+        # A warning, not a refusal: the version is still detected, and a run
+        # without settings is usable — just not provably like-for-like.
+        log.warning(
+            "arms.server_settings_unrecorded",
+            arm=name,
+            hint="set the *_SERVER_ENV / *_SERVER_ARGS JSON in .env — see .env.example",
+        )
     return ArmConfig(
         name=name,
         model_variant=model_variant,
@@ -203,6 +265,8 @@ def _remote_arm(
             memory_bandwidth_gb_s=memory_bandwidth_gb_s,
             hourly_usd=hourly_usd,
         ),
+        server_software=server_software,
+        version_path=version_path,
     )
 
 
@@ -240,6 +304,10 @@ def vllm_cuda_arm(model_variant: str, settings: Settings | None = None) -> ArmCo
         base_url_env="VLLM_CUDA_BASE_URL",
         processor_env="VLLM_CUDA_GPU_NAME",
         processor_probe="nvidia-smi --query-gpu=name --format=csv,noheader",
+        server_software=ServerSoftware(
+            stack="vllm", settings=_stringify(settings.vllm_cuda_server_args)
+        ),
+        version_path=VLLM_VERSION_PATH,
         api_key=settings.vllm_cuda_api_key,
         provider=settings.vllm_cuda_provider,
         instance_type=settings.vllm_cuda_instance_type,
@@ -292,6 +360,10 @@ def ollama_cloud_arm(model_variant: str, settings: Settings | None = None) -> Ar
         base_url_env="OLLAMA_CLOUD_BASE_URL",
         processor_env="OLLAMA_CLOUD_CPU_NAME",
         processor_probe="lscpu | grep 'Model name'",
+        server_software=ServerSoftware(
+            stack="ollama", settings=_stringify(settings.ollama_cloud_server_env)
+        ),
+        version_path=OLLAMA_VERSION_PATH,
         provider=settings.ollama_cloud_provider,
         instance_type=settings.ollama_cloud_instance_type,
         region=settings.ollama_cloud_region,

@@ -49,7 +49,7 @@ from forge.phase2.arms import (
     vllm_cuda_arm,
     vllm_metal_arm,
 )
-from forge.phase2.client import make_client, run_request
+from forge.phase2.client import DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT_S, make_client, run_request
 from forge.phase2.metrics import aggregate
 from forge.phase2.prompts import PromptCase, build_prompt_buckets
 from forge.phase2.result_schema import RequestResult
@@ -171,6 +171,8 @@ async def run_sweep(
     thermal_monitor: ThermalMonitor | None,
     n_repeats: int = DEFAULT_N_REPEATS,
     n_warmup: int = DEFAULT_N_WARMUP,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    request_timeout_s: float = DEFAULT_TIMEOUT_S,
 ) -> None:
     # No seed here, deliberately: unlike Phase 1's parity-check sampling
     # (which needs the exact same 50 cases reproduced across runs), sweep
@@ -186,8 +188,13 @@ async def run_sweep(
 
         log.info("sweep.group_start", arm=arm, model_variant=model_variant, n_cells=len(cells))
         try:
-            with ManagedServer(arm_config) as _server:
-                async with make_client(arm_config) as client:
+            with ManagedServer(arm_config) as server:
+                # The server's copy, not ours: it carries the version detected
+                # from the live server (see ManagedServer._detect_version).
+                arm_config = server.arm_config
+                async with make_client(
+                    arm_config, max_retries=max_retries, timeout_s=request_timeout_s
+                ) as client:
                     for cell in cells:
                         # None (not True) when thermal monitoring is off: "never
                         # checked" and "checked, and it was cool" are different
@@ -235,6 +242,7 @@ async def run_sweep(
                             cell.concurrency,
                             cell.prompt_bucket,
                             server_hardware=arm_config.server_hardware,
+                            server_software=arm_config.server_software,
                         ):
                             mlflow_tracking.log_arm_metrics(metrics)
                             mlflow_tracking.log_raw_results(results)
@@ -287,6 +295,20 @@ def main() -> None:
         default=Path("models/fused-bf16"),
         help="Only used to load the tokenizer for prompt-bucket token counting — "
         "any variant's tokenizer is identical, bf16 is just the canonical one.",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=DEFAULT_MAX_RETRIES,
+        help="openai SDK retries per request. Use 0 for remote arms: a retried request's "
+        "TTFT silently includes the failed attempt. See client.make_client.",
+    )
+    parser.add_argument(
+        "--request-timeout-s",
+        type=float,
+        default=DEFAULT_TIMEOUT_S,
+        help="Per-request read timeout. Raise it for a CPU VM, where queueing at "
+        "concurrency >= 4 on the long bucket can exceed the default before the first token.",
     )
     parser.add_argument(
         "--skip-thermal",
@@ -361,6 +383,8 @@ def main() -> None:
                 thermal_monitor,
                 n_repeats=args.n_repeats,
                 n_warmup=args.n_warmup,
+                max_retries=args.max_retries,
+                request_timeout_s=args.request_timeout_s,
             )
         )
     finally:
