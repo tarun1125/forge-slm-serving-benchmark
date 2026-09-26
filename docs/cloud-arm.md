@@ -454,6 +454,24 @@ curl -fsSL https://ollama.com/install.sh | sh     # on the VM; supports arm64
 ollama --version                                  # on the Mac AND the VM — should match
 ```
 
+**The baseline to match**, read from the Mac daemon's own startup log
+(`ollama serve` prints a `server config` line) on 26 September 2026: Ollama
+**0.32.14**, `OLLAMA_NUM_PARALLEL=1`, flash attention off, default (f16) KV
+cache, `KEEP_ALIVE=5m`. `NUM_PARALLEL=1` means the local `ollama` arm served
+one request at a time and queued the rest — so its concurrency curve measures
+queueing, and the VM must be pinned to the same value or the two curves stop
+being comparable. Pin both version and env on the VM:
+
+```bash
+# on the VM
+curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.32.14 sh
+sudo mkdir -p /etc/systemd/system/ollama.service.d
+printf '[Service]\nEnvironment="OLLAMA_NUM_PARALLEL=1"\nEnvironment="OLLAMA_FLASH_ATTENTION=0"\nEnvironment="OLLAMA_KEEP_ALIVE=5m"\n' \
+  | sudo tee /etc/systemd/system/ollama.service.d/forge.conf
+sudo systemctl daemon-reload && sudo systemctl restart ollama
+journalctl -u ollama --no-pager | grep -o 'OLLAMA_NUM_PARALLEL:[^ ]*' | tail -1   # must print :1
+```
+
 The **version** is detected from the live daemon (`/api/version`) when the
 sweep starts; nothing to type. The **settings** can't be detected — neither
 daemon reports its own env — so set `OLLAMA_NUM_PARALLEL`,
