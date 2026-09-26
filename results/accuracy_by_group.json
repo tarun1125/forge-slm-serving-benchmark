@@ -3,328 +3,423 @@
     "arm": "mlx_lm",
     "model_variant": "4bit",
     "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 13,
-    "n_scoreable": 13,
-    "n_correct": 3,
-    "execution_accuracy": 0.23076923076923078,
+    "correct_case_credit": 2.111111111111111,
+    "execution_accuracy": 0.2111111111111111,
     "nondeterministic_case_ids": [
-      "spider-world_1-23",
+      "cs-m7",
       "spider-college_1-154",
-      "cs-m7"
-    ]
+      "spider-world_1-23"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "mlx_lm/4bit/medium": {
     "arm": "mlx_lm",
     "model_variant": "4bit",
     "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 12,
-    "n_scoreable": 12,
-    "n_correct": 4,
-    "execution_accuracy": 0.3333333333333333,
+    "correct_case_credit": 4.0,
+    "execution_accuracy": 0.4,
     "nondeterministic_case_ids": [
       "spider-college_2-141",
       "spider-store_1-26"
-    ]
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "mlx_lm/4bit/short": {
     "arm": "mlx_lm",
     "model_variant": "4bit",
     "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 13,
-    "n_scoreable": 13,
-    "n_correct": 0,
+    "correct_case_credit": 0.0,
     "execution_accuracy": 0.0,
     "nondeterministic_case_ids": [
-      "spider-store_1-69",
-      "spider-college_1-154"
-    ]
+      "spider-college_1-154",
+      "spider-store_1-69"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "mlx_lm/8bit/long": {
     "arm": "mlx_lm",
     "model_variant": "8bit",
     "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 11,
-    "n_scoreable": 11,
-    "n_correct": 2,
-    "execution_accuracy": 0.18181818181818182,
+    "correct_case_credit": 2.0,
+    "execution_accuracy": 0.2,
     "nondeterministic_case_ids": [
       "spider-store_1-26"
-    ]
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "mlx_lm/8bit/medium": {
     "arm": "mlx_lm",
     "model_variant": "8bit",
     "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 12,
-    "n_scoreable": 12,
-    "n_correct": 3,
-    "execution_accuracy": 0.25,
+    "correct_case_credit": 3.0,
+    "execution_accuracy": 0.3,
     "nondeterministic_case_ids": [
-      "spider-college_2-141",
-      "spider-college_1-103"
-    ]
+      "spider-college_1-103",
+      "spider-college_2-141"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "mlx_lm/8bit/short": {
     "arm": "mlx_lm",
     "model_variant": "8bit",
     "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 12,
-    "n_scoreable": 12,
-    "n_correct": 0,
+    "correct_case_credit": 0.0,
     "execution_accuracy": 0.0,
     "nondeterministic_case_ids": [
-      "spider-wine_1-30",
-      "spider-hr_1-8"
-    ]
+      "spider-hr_1-8",
+      "spider-wine_1-30"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "mlx_lm/bf16/long": {
     "arm": "mlx_lm",
     "model_variant": "bf16",
     "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 12,
-    "n_scoreable": 12,
-    "n_correct": 3,
-    "execution_accuracy": 0.25,
+    "correct_case_credit": 2.7777777777777777,
+    "execution_accuracy": 0.2777777777777778,
     "nondeterministic_case_ids": [
-      "spider-pets_1-14",
-      "spider-college_1-103"
-    ]
+      "spider-college_1-103",
+      "spider-pets_1-14"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "mlx_lm/bf16/medium": {
     "arm": "mlx_lm",
     "model_variant": "bf16",
     "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 11,
-    "n_scoreable": 11,
-    "n_correct": 4,
-    "execution_accuracy": 0.36363636363636365,
+    "correct_case_credit": 4.0,
+    "execution_accuracy": 0.4,
     "nondeterministic_case_ids": [
       "spider-college_1-103"
-    ]
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "mlx_lm/bf16/short": {
     "arm": "mlx_lm",
     "model_variant": "bf16",
     "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 10,
-    "n_scoreable": 10,
-    "n_correct": 0,
+    "correct_case_credit": 0.0,
     "execution_accuracy": 0.0,
-    "nondeterministic_case_ids": []
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "ollama/f16/long": {
     "arm": "ollama",
     "model_variant": "f16",
     "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 10,
-    "n_scoreable": 10,
-    "n_correct": 2,
+    "correct_case_credit": 2.0,
     "execution_accuracy": 0.2,
-    "nondeterministic_case_ids": []
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "ollama/f16/medium": {
     "arm": "ollama",
     "model_variant": "f16",
     "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 10,
-    "n_scoreable": 10,
-    "n_correct": 4,
+    "correct_case_credit": 4.0,
     "execution_accuracy": 0.4,
-    "nondeterministic_case_ids": []
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "ollama/f16/short": {
     "arm": "ollama",
     "model_variant": "f16",
     "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 10,
-    "n_scoreable": 10,
-    "n_correct": 0,
+    "correct_case_credit": 0.0,
     "execution_accuracy": 0.0,
-    "nondeterministic_case_ids": []
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "ollama/q4/long": {
     "arm": "ollama",
     "model_variant": "q4",
     "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 10,
-    "n_scoreable": 10,
-    "n_correct": 3,
+    "correct_case_credit": 3.0,
     "execution_accuracy": 0.3,
-    "nondeterministic_case_ids": []
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "ollama/q4/medium": {
     "arm": "ollama",
     "model_variant": "q4",
     "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 10,
-    "n_scoreable": 10,
-    "n_correct": 5,
+    "correct_case_credit": 5.0,
     "execution_accuracy": 0.5,
-    "nondeterministic_case_ids": []
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "ollama/q4/short": {
     "arm": "ollama",
     "model_variant": "q4",
     "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 10,
-    "n_scoreable": 10,
-    "n_correct": 0,
+    "correct_case_credit": 0.0,
     "execution_accuracy": 0.0,
-    "nondeterministic_case_ids": []
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "ollama/q8/long": {
     "arm": "ollama",
     "model_variant": "q8",
     "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 10,
-    "n_scoreable": 10,
-    "n_correct": 2,
+    "correct_case_credit": 2.0,
     "execution_accuracy": 0.2,
-    "nondeterministic_case_ids": []
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "ollama/q8/medium": {
     "arm": "ollama",
     "model_variant": "q8",
     "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 10,
-    "n_scoreable": 10,
-    "n_correct": 4,
+    "correct_case_credit": 4.0,
     "execution_accuracy": 0.4,
-    "nondeterministic_case_ids": []
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "ollama/q8/short": {
     "arm": "ollama",
     "model_variant": "q8",
     "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 10,
-    "n_scoreable": 10,
-    "n_correct": 0,
+    "correct_case_credit": 0.0,
     "execution_accuracy": 0.0,
-    "nondeterministic_case_ids": []
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
+  },
+  "ollama_cloud/q4/long": {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
+    "n_unique_generations": 12,
+    "correct_case_credit": 2.2,
+    "execution_accuracy": 0.22000000000000003,
+    "nondeterministic_case_ids": [
+      "spider-college_1-154",
+      "spider-store_1-26"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
+  },
+  "ollama_cloud/q4/medium": {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
+    "n_unique_generations": 10,
+    "correct_case_credit": 5.0,
+    "execution_accuracy": 0.5,
+    "nondeterministic_case_ids": [],
+    "accuracy_method": "per_case_mean_request_weighted"
+  },
+  "ollama_cloud/q4/short": {
+    "arm": "ollama_cloud",
+    "model_variant": "q4",
+    "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
+    "n_unique_generations": 11,
+    "correct_case_credit": 0.0,
+    "execution_accuracy": 0.0,
+    "nondeterministic_case_ids": [
+      "spider-hr_1-8"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "vllm_metal/4bit/long": {
     "arm": "vllm_metal",
     "model_variant": "4bit",
     "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 19,
-    "n_scoreable": 19,
-    "n_correct": 3,
-    "execution_accuracy": 0.15789473684210525,
+    "correct_case_credit": 2.7888888888888888,
+    "execution_accuracy": 0.27888888888888885,
     "nondeterministic_case_ids": [
-      "spider-wine_1-30",
-      "spider-store_1-26",
+      "cs-m7",
       "spider-college_1-154",
       "spider-pets_1-14",
-      "cs-m7",
+      "spider-store_1-26",
+      "spider-wine_1-30",
       "spider-world_1-23"
-    ]
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "vllm_metal/4bit/medium": {
     "arm": "vllm_metal",
     "model_variant": "4bit",
     "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 14,
-    "n_scoreable": 14,
-    "n_correct": 5,
-    "execution_accuracy": 0.35714285714285715,
+    "correct_case_credit": 4.333333333333333,
+    "execution_accuracy": 0.4333333333333333,
     "nondeterministic_case_ids": [
       "spider-college_2-141",
       "spider-wine_1-30"
-    ]
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "vllm_metal/4bit/short": {
     "arm": "vllm_metal",
     "model_variant": "4bit",
     "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 16,
-    "n_scoreable": 16,
-    "n_correct": 0,
+    "correct_case_credit": 0.0,
     "execution_accuracy": 0.0,
     "nondeterministic_case_ids": [
-      "spider-store_1-69",
       "spider-college_1-154",
+      "spider-hr_1-8",
       "spider-store_1-26",
-      "spider-hr_1-8"
-    ]
+      "spider-store_1-69"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "vllm_metal/8bit/long": {
     "arm": "vllm_metal",
     "model_variant": "8bit",
     "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 12,
-    "n_scoreable": 12,
-    "n_correct": 3,
-    "execution_accuracy": 0.25,
+    "correct_case_credit": 2.1,
+    "execution_accuracy": 0.21000000000000002,
     "nondeterministic_case_ids": [
-      "spider-college_2-141",
-      "spider-college_1-154"
-    ]
+      "spider-college_1-154",
+      "spider-college_2-141"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "vllm_metal/8bit/medium": {
     "arm": "vllm_metal",
     "model_variant": "8bit",
     "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 13,
-    "n_scoreable": 13,
-    "n_correct": 4,
-    "execution_accuracy": 0.3076923076923077,
+    "correct_case_credit": 3.6666666666666665,
+    "execution_accuracy": 0.36666666666666664,
     "nondeterministic_case_ids": [
-      "spider-college_1-154",
       "cs-m7",
-      "spider-college_1-103"
-    ]
+      "spider-college_1-103",
+      "spider-college_1-154"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "vllm_metal/8bit/short": {
     "arm": "vllm_metal",
     "model_variant": "8bit",
     "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 15,
-    "n_scoreable": 15,
-    "n_correct": 0,
+    "correct_case_credit": 0.0,
     "execution_accuracy": 0.0,
     "nondeterministic_case_ids": [
       "spider-store_1-69",
       "spider-wine_1-30",
       "spider-world_1-85"
-    ]
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "vllm_metal/bf16/long": {
     "arm": "vllm_metal",
     "model_variant": "bf16",
     "prompt_bucket": "long",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 13,
-    "n_scoreable": 13,
-    "n_correct": 2,
-    "execution_accuracy": 0.15384615384615385,
+    "correct_case_credit": 1.8888888888888888,
+    "execution_accuracy": 0.18888888888888888,
     "nondeterministic_case_ids": [
-      "spider-store_1-26",
-      "cs-m7"
-    ]
+      "cs-m7",
+      "spider-store_1-26"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "vllm_metal/bf16/medium": {
     "arm": "vllm_metal",
     "model_variant": "bf16",
     "prompt_bucket": "medium",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 11,
-    "n_scoreable": 11,
-    "n_correct": 4,
-    "execution_accuracy": 0.36363636363636365,
+    "correct_case_credit": 3.5555555555555554,
+    "execution_accuracy": 0.3555555555555555,
     "nondeterministic_case_ids": [
       "cs-m7"
-    ]
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   },
   "vllm_metal/bf16/short": {
     "arm": "vllm_metal",
     "model_variant": "bf16",
     "prompt_bucket": "short",
+    "n_cases": 10,
+    "n_scoreable_cases": 10,
     "n_unique_generations": 13,
-    "n_scoreable": 13,
-    "n_correct": 0,
+    "correct_case_credit": 0.0,
     "execution_accuracy": 0.0,
     "nondeterministic_case_ids": [
       "spider-store_1-26",
-      "spider-world_1-85",
-      "spider-store_1-69"
-    ]
+      "spider-store_1-69",
+      "spider-world_1-85"
+    ],
+    "accuracy_method": "per_case_mean_request_weighted"
   }
 }
