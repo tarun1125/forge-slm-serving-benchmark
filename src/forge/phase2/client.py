@@ -51,14 +51,26 @@ DEFAULT_TIMEOUT_S = 120.0
 STOP_SEQUENCES = ["<|im_end|>", "<|endoftext|>"]
 
 
-def make_client(arm_config: ArmConfig, max_retries: int = DEFAULT_MAX_RETRIES) -> AsyncOpenAI:
+def make_client(
+    arm_config: ArmConfig,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    timeout_s: float = DEFAULT_TIMEOUT_S,
+) -> AsyncOpenAI:
+    """max_retries > 0 is a measurement hazard, not just a resilience knob:
+    run_request() stamps request_start before the SDK's first attempt, so a
+    request that timed out and succeeded on retry reports a TTFT that includes
+    the failed attempt and the backoff, and the retry adds load to a server
+    that was already saturated. On fast local arms it never fires; on a CPU
+    VM at c>=4 with the long bucket, queueing alone can exceed 120s before the
+    first byte. See docs/cloud-arm.md — cloud runs pass --max-retries 0 and a
+    larger --request-timeout-s."""
     # Local servers ignore api_key entirely; the SDK just requires a non-empty string.
     api_key = arm_config.api_key or "not-needed"
     return AsyncOpenAI(
         base_url=arm_config.base_url,
         api_key=api_key,
         max_retries=max_retries,
-        timeout=DEFAULT_TIMEOUT_S,
+        timeout=timeout_s,
     )
 
 
@@ -140,4 +152,5 @@ async def run_request(
         # Copied straight off the arm, not detected: this process cannot
         # introspect a machine it only holds a URL for. None for local arms.
         server_hardware=arm_config.server_hardware,
+        server_software=arm_config.server_software,
     )

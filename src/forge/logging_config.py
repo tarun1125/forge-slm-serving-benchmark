@@ -24,7 +24,19 @@ import structlog
 
 
 def _log_level() -> int:
-    level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
+    # The process env wins, then .env via Settings: pydantic-settings loads
+    # .env into Settings fields, NOT into os.environ, so reading os.environ
+    # alone silently ignored LOG_LEVEL in .env (the same bug class
+    # arms.hosted_api_arm()'s docstring records for GROQ_API_KEY).
+    level_name = os.environ.get("LOG_LEVEL")
+    if not level_name:
+        from forge.config import get_settings
+
+        try:
+            level_name = get_settings().log_level
+        except Exception:  # noqa: BLE001 — a bad .env must not break logging setup itself
+            level_name = "INFO"
+    level_name = level_name.upper()
     return (
         logging.getLevelNamesMapping().get(level_name, logging.INFO)
         if hasattr(logging, "getLevelNamesMapping")

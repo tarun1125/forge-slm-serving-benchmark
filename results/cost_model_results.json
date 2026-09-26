@@ -100,6 +100,7 @@
       "cost_per_accuracy_point_inr": 1.9437192334905382
     }
   ],
+  "cloud_vm": [],
   "hosted_api": {
     "avg_prompt_tokens": 1469.0,
     "avg_completion_tokens": 356.26666666666665,

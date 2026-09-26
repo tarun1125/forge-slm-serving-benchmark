@@ -3,6 +3,7 @@ import pytest
 from forge.phase3.cost_model import (
     CostAssumptions,
     cloud_gpu_cost_per_query,
+    cloud_vm_cost_per_query,
     cost_per_accuracy_point,
     find_break_even_volume,
     hosted_api_cost_per_query,
@@ -185,3 +186,52 @@ class TestCostPerAccuracyPoint:
     def test_divides_cost_by_accuracy(self):
         result = cost_per_accuracy_point(cost_per_query_inr=1.0, execution_accuracy=0.5)
         assert result == pytest.approx(2.0)
+
+
+class TestCloudVmCostPerQuery:
+    # 10 tok/s, 100 tokens/query -> 0.1 q/s -> 262,800 queries per 730-hour month.
+    CAPACITY = 262_800
+
+    def _cost(self, volume: int, hourly_usd: float = 0.10):
+        return cloud_vm_cost_per_query(hourly_usd, 88.0, 10.0, 100.0, volume)
+
+    def test_always_on_vm_cost_falls_as_one_over_volume(self):
+        low, high = self._cost(1_000), self._cost(10_000)
+        assert low.n_vms == high.n_vms == 1
+        assert low.total_cost_inr == pytest.approx(10 * high.total_cost_inr)
+        # one VM, 730 billed hours at $0.10, spread over 10k queries
+        assert high.total_cost_inr == pytest.approx(0.10 * 730 * 88.0 / 10_000)
+
+    def test_scales_out_in_whole_vms_past_capacity(self):
+        at_capacity = self._cost(self.CAPACITY)
+        just_over = self._cost(self.CAPACITY + 1)
+        assert at_capacity.n_vms == 1
+        assert at_capacity.utilization == pytest.approx(1.0)
+        assert just_over.n_vms == 2
+        assert just_over.utilization == pytest.approx(0.5, abs=1e-5)
+        assert just_over.total_cost_inr > at_capacity.total_cost_inr
+
+    def test_fully_utilized_cost_is_the_floor(self):
+        floor = self._cost(self.CAPACITY).total_cost_inr
+        assert self._cost(2 * self.CAPACITY).total_cost_inr == pytest.approx(floor)
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"hourly_usd": 0},
+            {"throughput_tokens_per_sec": 0},
+            {"avg_completion_tokens": 0},
+            {"monthly_query_volume": 0},
+        ],
+    )
+    def test_rejects_nonpositive_inputs(self, kwargs):
+        args = dict(
+            hourly_usd=0.1,
+            usd_to_inr=88.0,
+            throughput_tokens_per_sec=10.0,
+            avg_completion_tokens=100.0,
+            monthly_query_volume=1000,
+        )
+        args.update(kwargs)
+        with pytest.raises(ValueError):
+            cloud_vm_cost_per_query(**args)

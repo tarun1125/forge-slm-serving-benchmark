@@ -44,6 +44,10 @@ qualitative story, since idle-power draw is a small fraction of active-inference
 | vllm_metal | 8bit | 330.6 | 30.8% | ₹0.6942 | 300,000 | ₹2.2561 |
 | vllm_metal | 4bit | 459.8 | 35.7% | ₹0.6942 | 300,000 | ₹1.9437 |
 
+## Cloud VMs — measured on rented hardware
+
+Not measured yet. Run the `ollama_cloud` (CPU) or `vllm_cuda` (GPU) arm — see `docs/cloud-arm.md` — and re-run this script; this section and its curves fill in from the result rows.
+
 **Hosted API (Groq, gpt-oss-120b):** ₹0.0382/query flat (no utilization dependence), 66.7% accuracy on a real 15-case sample (avg 1469 prompt + 356 completion tokens — completion includes hidden reasoning-model tokens, confirmed live: at max_tokens=300 the model silently burned its entire budget on invisible reasoning on 4 of 15 real requests and returned no visible output at all).
 
 ## Break-even

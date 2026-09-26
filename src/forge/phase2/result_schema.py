@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from forge.hardware import HardwareInfo, ServerHardware
+from forge.hardware import HardwareInfo, ServerHardware, ServerSoftware
 
 
 class RequestResult(BaseModel):
@@ -59,6 +59,10 @@ class RequestResult(BaseModel):
     # ArmConfig.server_hardware — see hardware.ServerHardware for why a
     # remote row without this is treated as a defect rather than a gap.
     server_hardware: ServerHardware | None = None
+    # Stack, detected version and daemon settings of the server, for every arm
+    # that has one — see hardware.ServerSoftware. None on rows written before
+    # this field existed.
+    server_software: ServerSoftware | None = None
 
     @property
     def succeeded(self) -> bool:

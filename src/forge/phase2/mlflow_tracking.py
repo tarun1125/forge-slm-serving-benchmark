@@ -22,7 +22,7 @@ from pathlib import Path
 import mlflow
 
 from forge.config import get_settings
-from forge.hardware import ServerHardware, get_hardware_dict
+from forge.hardware import ServerHardware, ServerSoftware, get_hardware_dict
 from forge.logging_config import get_logger
 from forge.phase2.metrics import ArmMetrics
 from forge.phase2.result_schema import RequestResult
@@ -46,6 +46,7 @@ def sweep_cell_run(
     concurrency: int,
     prompt_bucket: str,
     server_hardware: ServerHardware | None = None,
+    server_software: ServerSoftware | None = None,
 ) -> Iterator[None]:
     """One MLflow run per (arm, model_variant, concurrency, prompt_bucket)
     cell — matches metrics.aggregate()'s own grouping exactly, so a run's
@@ -82,6 +83,18 @@ def sweep_cell_run(
                         if v is not None
                     }
                     if server_hardware is not None
+                    else {}
+                ),
+                **(
+                    {
+                        "server_software.stack": server_software.stack,
+                        "server_software.version": server_software.version or "unknown",
+                        **{
+                            f"server_software.settings.{k}": v
+                            for k, v in server_software.settings.items()
+                        },
+                    }
+                    if server_software is not None
                     else {}
                 ),
             }

@@ -42,3 +42,6 @@ results/figures/
 *.egg-info/
 
 uv.lock.bak
+
+# Launched servers' stdout/stderr (server_lifecycle.py) — per-run, machine-local
+logs/
